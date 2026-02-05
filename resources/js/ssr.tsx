@@ -1,22 +1,40 @@
 import { createInertiaApp } from '@inertiajs/react';
-import createServer from '@inertiajs/react/server';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
-import ReactDOMServer from 'react-dom/server';
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import '../css/app.css';
+import { initializeTheme } from './hooks/use-appearance';
+
+// 👉 Ziggy
+import { route } from 'ziggy-js';
+import { Ziggy } from './ziggy';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
-createServer((page) =>
-    createInertiaApp({
-        page,
-        render: ReactDOMServer.renderToString,
-        title: (title) => (title ? `${title} - ${appName}` : appName),
-        resolve: (name) =>
-            resolvePageComponent(
-                `./pages/${name}.tsx`,
-                import.meta.glob('./pages/**/*.tsx'),
-            ),
-        setup: ({ App, props }) => {
-            return <App {...props} />;
-        },
-    }),
-);
+// Make Ziggy global
+window.Ziggy = Ziggy;
+window.route = route;
+
+createInertiaApp({
+    title: (title) => (title ? `${title} - ${appName}` : appName),
+    resolve: (name) =>
+        resolvePageComponent(
+            `./pages/${name}.tsx`,
+            import.meta.glob('./pages/**/*.tsx'),
+        ),
+    setup({ el, App, props }) {
+        const root = createRoot(el);
+
+        root.render(
+            <StrictMode>
+                <App {...props} />
+            </StrictMode>,
+        );
+    },
+    progress: {
+        color: '#4B5563',
+    },
+});
+
+// This will set light / dark mode on load...
+initializeTheme();

@@ -15,11 +15,17 @@ import {
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
+import { route } from 'ziggy-js';
 
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: dashboard(),
+        icon: LayoutGrid,
+    },
+    {
+        title: 'Create Post',
+        href: route('posts.create'),
         icon: LayoutGrid,
     },
 ];
