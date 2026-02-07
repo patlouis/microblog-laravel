@@ -24,7 +24,12 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
-        title: 'Create Post',
+        title: 'My Posts',
+        href: route('posts.index'),
+        icon: LayoutGrid,
+    },
+    {
+        title: 'Profile',
         href: route('posts.create'),
         icon: LayoutGrid,
     },

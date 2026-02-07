@@ -12,15 +12,16 @@ use Inertia\Inertia;
 class PostController extends Controller
 {
     /**
-     * Display the feed.
+     * Display user's own posts.
      */
     public function index()
     {
-        $posts = Post::with('user')
+        $posts = auth()->user()->posts()
+            ->with('user')
             ->latest()
             ->get();
 
-        return Inertia::render('dashboard', [
+        return Inertia::render('post/index', [
             'posts' => $posts,
         ]);
     }
