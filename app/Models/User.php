@@ -72,9 +72,5 @@ class User extends Authenticatable implements MustVerifyEmail
                 $user->posts()->delete();
             }
         });
-
-        static::restoring(function (User $user) {
-            $user->posts()->withTrashed()->restore();
-        });
     }
 }

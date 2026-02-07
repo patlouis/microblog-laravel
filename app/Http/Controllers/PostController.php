@@ -20,7 +20,7 @@ class PostController extends Controller
             ->latest()
             ->get();
 
-        return Inertia::render('post/index', [
+        return Inertia::render('dashboard', [
             'posts' => $posts,
         ]);
     }
@@ -37,16 +37,16 @@ class PostController extends Controller
     {
         $validated = $request->validated();
 
-        $imagePath = null;
+        $imageUrl = null;
 
         if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('posts', 'public');
+            $imageUrl = $request->file('image')->store('posts', 'public');
         }
 
         Post::create([
             'user_id' => Auth::id(),
             'content' => $validated['content'],
-            'image_path' => $imagePath,
+            'image_url' => $imageUrl,
         ]);
 
         return redirect()->back();
@@ -79,11 +79,11 @@ class PostController extends Controller
         $validated = $request->validated();
 
         if ($request->hasFile('image')) {
-            if ($post->image_path) {
-                Storage::disk('public')->delete($post->image_path);
+            if ($post->image_url) {
+                Storage::disk('public')->delete($post->image_url);
             }
 
-            $post->image_path = $request->file('image')->store('posts', 'public');
+            $post->image_url = $request->file('image')->store('posts', 'public');
         }
 
         $post->update([

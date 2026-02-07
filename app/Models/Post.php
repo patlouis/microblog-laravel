@@ -11,8 +11,9 @@ class Post extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'user_id',
         'content',
-        'image_path',
+        'image_url',
     ];
 
     protected $casts = [
@@ -26,6 +27,6 @@ class Post extends Model
      */
     public function user()
     {
-        return $this->belongsTo(User::class)->withTrashed();
+        return $this->belongsTo(User::class);
     }
 }
