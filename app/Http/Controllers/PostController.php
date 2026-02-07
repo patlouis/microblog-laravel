@@ -103,8 +103,10 @@ class PostController extends Controller
      */
     public function destroy(Post $post)
     {
-        $this->authorize('delete', $post);
-
+        if ($post->image_url) {
+            Storage::disk('public')->delete($post->image_url);
+        }
+        
         $post->delete();
 
         return redirect()->back();
