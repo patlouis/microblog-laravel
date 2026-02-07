@@ -65,18 +65,22 @@ class PostController extends Controller
         ]);
     }
 
-        public function edit()
-        {
-            return Inertia::render('post/edit', []);
-        }
+    public function edit(Post $post)
+    {
+        return Inertia::render('post/edit', [
+            'post' => [
+                'id' => $post->id,
+                'content' => $post->content,
+                'image_url' => $post->image_url,
+            ]
+        ]);
+    }
 
     /**
      * Update the specified post.
      */
     public function update(UpdatePostRequest $request, Post $post)
     {
-        $this->authorize('update', $post);
-
         $validated = $request->validated();
 
         if ($request->hasFile('image')) {
