@@ -1,5 +1,5 @@
-import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react'; 
+import { LayoutGrid, User, Home, FileText } from 'lucide-react'; 
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -12,41 +12,40 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
 import { route } from 'ziggy-js';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Home',
-        href: route('dashboard'),
-        icon: LayoutGrid,
-    },
-    {
-        title: 'My Posts',
-        href: route('posts.index'),
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Profile',
-        href: route('dashboard'),
-        icon: LayoutGrid,
-    },
-];
-
-const footerNavItems: NavItem[] = [
-    // 
-];
-
 export function AppSidebar() {
+    const { auth } = usePage().props as any;
+
+    const mainNavItems: NavItem[] = [
+        {
+            title: 'Home',
+            href: route('dashboard'),
+            icon: Home,
+        },
+        {
+            title: 'My Posts',
+            href: route('posts.index'),
+            icon: FileText,
+        },
+        {
+            title: 'Profile',
+            href: route('profile.show', { user: auth.user.id }),
+            icon: User,
+        },
+    ];
+
+    const footerNavItems: NavItem[] = [];
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
+                            <Link href={route('dashboard')} prefetch>
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>
