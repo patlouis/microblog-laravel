@@ -19,7 +19,7 @@ import { route } from 'ziggy-js';
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Dashboard',
+        title: 'Home',
         href: route('dashboard'),
         icon: LayoutGrid,
     },
@@ -30,7 +30,7 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Profile',
-        href: route('posts.create'),
+        href: route('dashboard'),
         icon: LayoutGrid,
     },
 ];

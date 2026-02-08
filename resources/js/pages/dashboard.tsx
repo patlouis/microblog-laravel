@@ -6,7 +6,7 @@ import { route } from 'ziggy-js';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Dashboard',
+        title: 'Home',
         href: dashboard().url,
     },
 ];
@@ -27,7 +27,7 @@ type Post = {
 export default function Dashboard({ posts }: { posts: Post[] }) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Dashboard" />
+            <Head title="Home" />
             <div className="mx-auto max-w-xl space-y-4 py-8">                
                 {posts.map((post) => (
                     <div
