@@ -7,6 +7,7 @@ use App\Http\Controllers\PostController;
 use App\Http\Controllers\DashboardController; 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\LikeController;
+use App\Http\Controllers\CommentController;
 
 Route::get('/', function () {
     return Inertia::render('welcome', [
@@ -18,6 +19,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/profile/{user}', [ProfileController::class, 'show'])->name('profile.show');
     Route::post('/posts/{post}/like', [LikeController::class, 'toggle'])->name('posts.like'); 
+    Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store');
     Route::resource('posts', PostController::class);
 });
 

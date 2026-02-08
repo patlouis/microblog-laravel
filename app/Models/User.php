@@ -55,29 +55,25 @@ class User extends Authenticatable implements MustVerifyEmail
         ];
     }
 
-    /**
-     * User has many posts.
-     */
     public function posts(): HasMany
     {
         return $this->hasMany(Post::class);
     }
 
-    /**
-     * User has many likes.
-     */
     public function likes(): HasMany
     {
         return $this->hasMany(Like::class);
     }
 
-    /**
-     * Posts liked by the user.
-     */
     public function likedPosts(): BelongsToMany
     {
         return $this->belongsToMany(Post::class, 'likes')
             ->withTimestamps();
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class);
     }
 
     /**
@@ -89,9 +85,11 @@ class User extends Authenticatable implements MustVerifyEmail
             if ($user->isForceDeleting()) {
                 $user->posts()->forceDelete();
                 $user->likes()->forceDelete();
+                $user->comments()->forceDelete();
             } else {
                 $user->posts()->delete();
                 $user->likes()->delete();
+                $user->comments()->delete();
             }
         });
     }

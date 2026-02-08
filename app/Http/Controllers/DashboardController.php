@@ -8,15 +8,16 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    /**
-     * Display the general feed.
-     */
     public function index(): Response
     {
         return Inertia::render('dashboard', [
-            'posts' => Post::with('user')
-                ->latest()
-                ->paginate(5),
+            'posts' => Post::with([
+                'user',                
+                'comments.user',        
+            ])
+            ->withCount('comments')     
+            ->latest()
+            ->paginate(5),
         ]);
     }
 }
