@@ -1,10 +1,10 @@
 import { Head, router, Link, usePage, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
 import { route } from 'ziggy-js';
 import { useState, useEffect } from 'react';
 import { formatRelativeDate } from '@/lib/utils';
-import { MessageSquare, Heart, Share2, X, MessageCircle, AlertCircle } from 'lucide-react';
+import { MessageSquare, Heart, Share2, X, MessageCircle, AlertCircle, Repeat2 } from 'lucide-react';
+import type { Post, PaginatedPosts, BreadcrumbItem, Comment } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -12,39 +12,6 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: route('dashboard'),
     },
 ];
-
-type User = { 
-    id: number; 
-    name: string; 
-    email: string 
-};
-
-type Comment = {
-    id: number;
-    body: string;
-    created_at: string;
-    user: User;
-};
-
-type Post = {
-    id: number;
-    content: string;
-    image_url?: string;
-    created_at: string;
-    user: User;
-    likes_count: number;
-    liked: boolean;
-    comments_count: number;
-    comments: Comment[];
-    shared: boolean; 
-    shares_count: number;
-    post?: Post; 
-};
-
-type PaginatedPosts = {
-    data: Post[];
-    next_page_url: string | null;
-};
 
 export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPosts }) {
     const { auth } = usePage().props as any;
@@ -54,7 +21,13 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPos
     const [isLoading, setIsLoading] = useState(false);
     
     const [selectedPost, setSelectedPost] = useState<Post | null>(null);
-    const { data: commentData, setData: setCommentData, post: submitComment, processing: commentProcessing, reset: resetComment } = useForm({
+    const { 
+        data: commentData, 
+        setData: setCommentData, 
+        post: submitComment, 
+        processing: commentProcessing, 
+        reset: resetComment 
+    } = useForm({
         body: '',
     });
 
@@ -90,25 +63,23 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPos
     };
 
     const toggleLike = (postId: number) => {
-        router.post(route('posts.like', postId), {}, {
-            preserveScroll: true,
-            onSuccess: () => {
-                setAllPosts((posts) =>
-                    posts.map((p) => {
-                        const targetId = p.post ? p.post.id : p.id;
-                        
-                        if (targetId === postId) {
-                             if (p.post) {
-                                 return { ...p, post: { ...p.post, liked: !p.post.liked, likes_count: p.post.liked ? p.post.likes_count - 1 : p.post.likes_count + 1 } };
-                             } else {
-                                 return { ...p, liked: !p.liked, likes_count: p.liked ? p.likes_count - 1 : p.likes_count + 1 };
-                             }
-                        }
-                        return p;
-                    })
-                );
-            },
-        });
+        setAllPosts((posts) =>
+            posts.map((p) => {
+                const content = p.post || p; 
+                
+                if (content.id === postId) {
+                     const updatedContent = { 
+                         ...content, 
+                         liked: !content.liked, 
+                         likes_count: content.liked ? content.likes_count - 1 : content.likes_count + 1 
+                     };
+                     return p.post ? { ...p, post: updatedContent } : updatedContent;
+                }
+                return p;
+            })
+        );
+
+        router.post(route('posts.like', postId), {}, { preserveScroll: true });
     };
 
     const toggleShare = (postToShare: Post) => {
@@ -117,12 +88,15 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPos
 
         setAllPosts((posts) => 
             posts.map(p => {
-                const pContent = p.post || p;
-                if (pContent.id === postToShare.id) {
-                    if (p.post) {
-                         return { ...p, post: { ...p.post, shared: !isCurrentlyShared, shares_count: newCount } };
-                    }
-                    return { ...p, shared: !isCurrentlyShared, shares_count: newCount };
+                const content = p.post || p;
+                
+                if (content.id === postToShare.id) {
+                    const updatedContent = { 
+                        ...content, 
+                        shared: !isCurrentlyShared, 
+                        shares_count: newCount 
+                    };
+                    return p.post ? { ...p, post: updatedContent } : updatedContent;
                 }
                 return p;
             })
@@ -132,7 +106,7 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPos
             preserveScroll: true,
             onError: () => {
                 alert("Action failed");
-                window.location.reload();
+                window.location.reload(); 
             }
         });
     };
@@ -141,7 +115,7 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPos
         e.preventDefault();
         if (!selectedPost) return;
 
-        const newComment = {
+        const newComment: Comment = {
             id: Date.now(), 
             body: commentData.body,
             created_at: new Date().toISOString(),
@@ -215,12 +189,12 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPos
                         }
 
                         return (
-                            <div key={`${isShare ? 's' : 'p'}-${item.id}`} className="rounded-lg border bg-background p-4 shadow-sm relative">
+                            <div key={`${isShare ? 's' : 'p'}-${item.id}`} className="rounded-lg border bg-background p-4 shadow-sm relative transition-all hover:shadow-md">
                                 
                                 {/* SHARE HEADER */}
                                 {isShare && (
                                     <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground mb-2 pl-12">
-                                        <Share2 size={12} className="text-green-600" />
+                                        <Repeat2 size={12} className="text-green-600" />
                                         <span>{sharer?.name} shared</span>
                                     </div>
                                 )}
@@ -241,20 +215,20 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPos
                                     </p>
                                 </div>
 
-                                {/* CONTENT */}
+                                {/* 3. Post Content */}
                                 <p className="mb-3 text-[15px] leading-relaxed whitespace-pre-wrap">{displayPost.content}</p>
 
                                 {displayPost.image_url && (
-                                    <div className="mt-3 overflow-hidden rounded-md border">
+                                    <div className="mt-3 overflow-hidden rounded-md border bg-muted/20">
                                         <img src={`/storage/${displayPost.image_url}`} className="w-full h-auto object-cover max-h-[500px]" alt="Content" />
                                     </div>
                                 )}
 
                                 <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-3 text-sm text-muted-foreground">
-                                    {/* Like */}
+                                    {/* LIKE */}
                                     <button
                                         onClick={() => toggleLike(displayPost.id)}
-                                        className={`flex items-center gap-2 transition-colors px-2 py-1 cursor-pointer ${
+                                        className={`flex items-center gap-2 transition-colors px-2 py-1 cursor-pointer rounded-md hover:bg-muted/50 ${
                                             displayPost.liked ? 'text-rose-500' : 'hover:text-rose-500'
                                         }`}
                                     >
@@ -262,23 +236,23 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPos
                                         <span>{displayPost.likes_count || 'Like'}</span>
                                     </button>
 
-                                    {/* Comment */}
+                                    {/* COMMENT */}
                                     <button 
                                         onClick={() => setSelectedPost(displayPost)}
-                                        className="flex items-center gap-2 hover:text-blue-500 transition-colors px-2 py-1 cursor-pointer"
+                                        className="flex items-center gap-2 hover:text-blue-500 transition-colors px-2 py-1 cursor-pointer rounded-md hover:bg-muted/50"
                                     >
                                         <MessageSquare size={18} />
                                         <span>{displayPost.comments_count || 'Comment'}</span>
                                     </button>
 
-                                    {/* Share */}
+                                    {/* SHARE */}
                                     <button 
                                         onClick={() => toggleShare(displayPost)}
-                                        className={`flex items-center gap-2 transition-colors px-2 py-1 cursor-pointer ${
+                                        className={`flex items-center gap-2 transition-colors px-2 py-1 cursor-pointer rounded-md hover:bg-muted/50 ${
                                             displayPost.shared ? 'text-green-600' : 'hover:text-green-600'
                                         }`}
                                     >
-                                        <Share2 size={18} />
+                                        <Repeat2 size={18} />
                                         <span>{displayPost.shares_count || 'Share'}</span>
                                     </button>
                                 </div>
@@ -297,7 +271,7 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPos
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedPost(null)} />
                     <div className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-background shadow-2xl animate-in fade-in zoom-in duration-200 flex flex-col max-h-[85vh]">
-                        <div className="flex items-center justify-between border-b p-4 shrink-0">
+                        <div className="flex items-center justify-between border-b p-4 shrink-0 bg-background/95 backdrop-blur">
                             <h3 className="text-sm font-bold uppercase tracking-widest">Comments</h3>
                             <button onClick={() => setSelectedPost(null)} className="rounded-full p-1 hover:bg-muted transition-colors"><X size={20} /></button>
                         </div>

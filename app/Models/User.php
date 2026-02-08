@@ -81,6 +81,27 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Share::class);
     }
 
+    public function followers()
+    {
+        return $this->belongsToMany(User::class, 'followers', 'user_id', 'follower_id')
+            ->whereNull('followers.deleted_at') 
+            ->withTimestamps();
+    }
+
+    public function following()
+    {
+        return $this->belongsToMany(User::class, 'followers', 'follower_id', 'user_id')
+            ->whereNull('followers.deleted_at')
+            ->withTimestamps();
+    }
+
+    public function isFollowing(User $user)
+    {
+        return Follow::where('follower_id', $this->id)
+            ->where('user_id', $user->id)
+            ->exists();
+    }
+
     /**
      * Cascade soft deletes to posts and likes.
      */

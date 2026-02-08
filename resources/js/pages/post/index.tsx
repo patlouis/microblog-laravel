@@ -1,7 +1,9 @@
 import { Head, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
 import { route } from 'ziggy-js';
+import { Plus, Pencil, Trash2, ImageOff, FileText } from 'lucide-react';
+
+import type { Post, BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -10,23 +12,11 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-type User = {
-    id: number;
-    name: string;
-};
-
-type Post = {
-    id: number;
-    content: string;
-    image_url?: string;
-    created_at: string;
-    user: User;
-};
-
 export default function Index({ posts }: { posts: Post[] }) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="My Posts" />
+            
             <div className="py-12 px-4 sm:px-6 lg:px-8">
                 <div className="mx-auto max-w-7xl">
                     <div className="flex items-center justify-between mb-8">
@@ -38,9 +28,10 @@ export default function Index({ posts }: { posts: Post[] }) {
                         </div>
                         <Link
                             href={route('posts.create')}
-                            className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            className="inline-flex items-center rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring gap-2"
                         >
-                            + New Post
+                            <Plus size={16} />
+                            <span>New Post</span>
                         </Link>
                     </div>
 
@@ -49,20 +40,18 @@ export default function Index({ posts }: { posts: Post[] }) {
                             {posts.map((post) => (
                                 <div
                                     key={post.id}
-                                    className="flex flex-col overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm transition-shadow hover:shadow-md"
+                                    className="group flex flex-col overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm transition-all hover:shadow-md"
                                 >
-                                    <div className="aspect-video w-full bg-muted">
+                                    <div className="aspect-video w-full bg-muted relative overflow-hidden">
                                         {post.image_url ? (
                                             <img
                                                 src={`/storage/${post.image_url}`}
                                                 alt="Post content"
-                                                className="h-full w-full object-cover"
+                                                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                                             />
                                         ) : (
-                                            <div className="flex h-full flex-col items-center justify-center text-muted-foreground opacity-50">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                </svg>
+                                            <div className="flex h-full flex-col items-center justify-center text-muted-foreground/50">
+                                                <ImageOff className="h-10 w-10 mb-2" />
                                                 <span className="text-[10px] uppercase tracking-wider font-semibold">No Image</span>
                                             </div>
                                         )}
@@ -73,7 +62,7 @@ export default function Index({ posts }: { posts: Post[] }) {
                                             {post.content}
                                         </p>
 
-                                        <div className="flex items-center justify-between border-t pt-4 text-xs">
+                                        <div className="flex items-center justify-between border-t border-border pt-4 text-xs">
                                             <span className="text-muted-foreground">
                                                 {new Date(post.created_at).toLocaleDateString(undefined, {
                                                     year: 'numeric',
@@ -82,20 +71,23 @@ export default function Index({ posts }: { posts: Post[] }) {
                                                 })}
                                             </span>
                                             
-                                            <div className="flex items-center gap-4">
+                                            <div className="flex items-center gap-2">
                                                 <Link 
                                                     href={route('posts.edit', post.id)} 
-                                                    className="font-semibold text-primary hover:text-primary/80 transition-colors cursor-pointer"
+                                                    className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 font-medium text-primary hover:bg-primary/10 transition-colors"
                                                 >
+                                                    <Pencil size={14} />
                                                     Edit
                                                 </Link>
+                                                
                                                 <Link 
                                                     href={route('posts.destroy', post.id)} 
                                                     method="delete" 
                                                     as="button"
                                                     onBefore={() => confirm('Are you sure you want to delete this post? This cannot be undone.')}
-                                                    className="font-semibold text-destructive hover:text-destructive/80 transition-colors focus:outline-none cursor-pointer"
+                                                    className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 font-medium text-destructive hover:bg-destructive/10 transition-colors"
                                                 >
+                                                    <Trash2 size={14} />
                                                     Delete
                                                 </Link>
                                             </div>
@@ -107,9 +99,7 @@ export default function Index({ posts }: { posts: Post[] }) {
                     ) : (
                         <div className="mt-20 flex flex-col items-center justify-center text-center">
                             <div className="rounded-full bg-muted p-6 mb-4">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                                </svg>
+                                <FileText className="h-10 w-10 text-muted-foreground" />
                             </div>
                             <h3 className="text-lg font-medium">No posts found</h3>
                             <p className="text-muted-foreground max-w-xs mx-auto mt-1">
@@ -117,9 +107,9 @@ export default function Index({ posts }: { posts: Post[] }) {
                             </p>
                             <Link 
                                 href={route('posts.create')} 
-                                className="mt-6 text-sm font-semibold text-primary hover:underline"
+                                className="mt-6 text-sm font-semibold text-primary hover:underline inline-flex items-center gap-1"
                             >
-                                Create your first post →
+                                Create your first post <span aria-hidden="true">&rarr;</span>
                             </Link>
                         </div>
                     )}

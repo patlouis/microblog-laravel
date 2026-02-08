@@ -26,6 +26,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/posts/{post}/share', [ShareController::class, 'store'])->name('posts.share');
     // Profile
     Route::get('/profile/{user}', [ProfileController::class, 'show'])->name('profile.show');
+    Route::post('/profile/{user}/follow', [ProfileController::class, 'follow'])->name('profile.follow');
 });
 
 require __DIR__.'/settings.php';

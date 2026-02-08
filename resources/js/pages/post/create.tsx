@@ -54,12 +54,11 @@ export default function Create() {
         }
     }
 
-    // 2. Function to remove the selected image
     function clearImage() {
         setData('image', null);
         setPreview(null);
         if (fileInput.current) {
-            fileInput.current.value = ''; // Manually clear the input field
+            fileInput.current.value = '';
         }
     }
 
@@ -98,7 +97,7 @@ export default function Create() {
                             <label className="block text-sm font-medium mb-1">Image Upload</label>
                             <input
                                 type="file"
-                                ref={fileInput} // Attached the ref here
+                                ref={fileInput}
                                 accept="image/*"
                                 onChange={handleImageChange}
                                 className="block w-full text-sm file:mr-4 file:rounded-md file:border-0 file:bg-primary file:px-4 file:py-2 file:text-primary-foreground hover:file:bg-primary/90"
@@ -108,7 +107,6 @@ export default function Create() {
                             )}
                         </div>
 
-                        {/* 3. Updated Preview with Remove Button */}
                         {preview && (
                             <div className="relative overflow-hidden rounded-lg border group bg-muted">
                                 <img
