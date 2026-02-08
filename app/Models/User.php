@@ -76,6 +76,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Comment::class);
     }
 
+    public function shares()
+    {
+        return $this->hasMany(Share::class);
+    }
+
     /**
      * Cascade soft deletes to posts and likes.
      */
