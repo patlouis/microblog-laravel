@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Post;
+use App\Models\Like;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -9,6 +11,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -61,15 +64,34 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Cascade soft deletes to posts.
+     * User has many likes.
+     */
+    public function likes(): HasMany
+    {
+        return $this->hasMany(Like::class);
+    }
+
+    /**
+     * Posts liked by the user.
+     */
+    public function likedPosts(): BelongsToMany
+    {
+        return $this->belongsToMany(Post::class, 'likes')
+            ->withTimestamps();
+    }
+
+    /**
+     * Cascade soft deletes to posts and likes.
      */
     protected static function booted(): void
     {
         static::deleting(function (User $user) {
             if ($user->isForceDeleting()) {
                 $user->posts()->forceDelete();
+                $user->likes()->forceDelete();
             } else {
                 $user->posts()->delete();
+                $user->likes()->delete();
             }
         });
     }
