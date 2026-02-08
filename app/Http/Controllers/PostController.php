@@ -87,15 +87,19 @@ class PostController extends Controller
             if ($post->image_url) {
                 Storage::disk('public')->delete($post->image_url);
             }
-
             $post->image_url = $request->file('image')->store('posts', 'public');
+        } 
+        else if ($request->boolean('remove_image')) {
+            if ($post->image_url) {
+                Storage::disk('public')->delete($post->image_url);
+            }
+            $post->image_url = null;
         }
 
-        $post->update([
-            'content' => $validated['content'],
-        ]);
+        $post->content = $validated['content'];
+        $post->save();
 
-        return redirect()->back();
+        return redirect()->route('posts.index')->with('success', 'Post updated!');
     }
 
     /**
