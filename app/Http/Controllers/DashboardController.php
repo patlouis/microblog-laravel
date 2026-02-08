@@ -16,7 +16,7 @@ class DashboardController extends Controller
         return Inertia::render('dashboard', [
             'posts' => Post::with('user')
                 ->latest()
-                ->get(),
+                ->paginate(5),
         ]);
     }
 }
