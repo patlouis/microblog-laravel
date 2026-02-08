@@ -50,7 +50,7 @@ class PostController extends Controller
             'image_url' => $imageUrl,
         ]);
 
-        return redirect()->back();
+        return redirect()->route('posts.index')->with('success', 'Post created successfully!');
     }
 
     /**
@@ -99,7 +99,7 @@ class PostController extends Controller
         $post->content = $validated['content'];
         $post->save();
 
-        return redirect()->route('posts.index')->with('success', 'Post updated!');
+        return redirect()->route('posts.index')->with('success', 'Post updated successfully!');
     }
 
     /**
@@ -113,6 +113,6 @@ class PostController extends Controller
         
         $post->delete();
 
-        return redirect()->back();
+        return redirect()->back()->with('success', 'Post deleted successfully!');
     }
 }

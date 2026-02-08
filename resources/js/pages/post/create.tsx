@@ -2,7 +2,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { route } from 'ziggy-js';
-import { useState, useRef } from 'react'; // Added useRef
+import { useState, useRef } from 'react'; 
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -12,10 +12,9 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Create() {
-    // 1. Add a ref to the file input to clear it manually
     const fileInput = useRef<HTMLInputElement>(null);
 
-    const { data, setData, post, processing, errors, reset } = useForm<{
+    const { data, setData, post, processing, errors, reset, isDirty } = useForm<{
         content: string;
         image: File | null;
     }>({
@@ -42,7 +41,7 @@ export default function Create() {
 
         if (file && !file.type.startsWith('image/')) {
             alert('Please select a valid image file.');
-            clearImage(); // Reuse the clear logic
+            clearImage();
             return;
         }
 
@@ -132,10 +131,10 @@ export default function Create() {
                         <div className="flex justify-end gap-2">
                             <button
                                 type="submit"
-                                disabled={processing}
+                                disabled={processing || !isDirty }
                                 className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 cursor-pointer"
                             >
-                                {processing ? 'Posting…' : 'Post'}
+                                {processing ? 'Saving…' : 'Save Changes'}
                             </button>
                         </div>
                     </form>

@@ -16,14 +16,13 @@ export default function Edit({ post: postData }: { post: Post }) {
         { title: 'Edit Post', href: route('posts.edit', postData.id) },
     ];
 
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors, isDirty } = useForm({
         content: postData.content || '',
         image: null as File | null,
-        remove_image: false, // Tracks if existing image should be deleted
+        remove_image: false,
         _method: 'put', 
     });
 
-    // Initialize preview with existing image if it exists
     const [preview, setPreview] = useState<string | null>(
         postData.image_url ? `/storage/${postData.image_url}` : null
     );
@@ -67,7 +66,6 @@ export default function Edit({ post: postData }: { post: Post }) {
                     </div>
 
                     <form onSubmit={submit} className="space-y-6">
-                        {/* Content Section */}
                         <div>
                             <label className="block text-sm font-medium mb-1">Content</label>
                             <textarea
@@ -83,7 +81,6 @@ export default function Edit({ post: postData }: { post: Post }) {
                             </div>
                         </div>
 
-                        {/* Image Upload Section */}
                         <div>
                             <label className="block text-sm font-medium mb-1">Update Image</label>
                             <input
@@ -95,7 +92,6 @@ export default function Edit({ post: postData }: { post: Post }) {
                             {errors.image && <p className="mt-1 text-sm text-destructive font-medium">{errors.image}</p>}
                         </div>
 
-                        {/* Preview Section with Remove Button */}
                         {preview && (
                             <div className="relative overflow-hidden rounded-lg border bg-muted group">
                                 <img src={preview} alt="Preview" className="h-64 w-full object-cover" />
@@ -115,11 +111,10 @@ export default function Edit({ post: postData }: { post: Post }) {
                             </div>
                         )}
 
-                        {/* Submit Section */}
                         <div className="flex justify-end pt-4">
                             <button
                                 type="submit"
-                                disabled={processing}
+                                disabled={processing || !isDirty}
                                 className="inline-flex items-center rounded-md bg-primary px-6 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition shadow-sm cursor-pointer"
                             >
                                 {processing ? 'Saving...' : 'Save Changes'}
