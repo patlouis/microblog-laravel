@@ -22,8 +22,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Post
     Route::resource('posts', PostController::class);
     Route::post('/posts/{post}/like', [LikeController::class, 'toggle'])->name('posts.like'); 
-    Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store');
     Route::post('/posts/{post}/share', [ShareController::class, 'store'])->name('posts.share');
+    Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store');
+    Route::put('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update');
+    Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
     // Profile
     Route::get('/profile/{user}', [ProfileController::class, 'show'])->name('profile.show');
     Route::post('/profile/{user}/follow', [ProfileController::class, 'follow'])->name('profile.follow');

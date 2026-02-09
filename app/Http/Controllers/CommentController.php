@@ -6,6 +6,7 @@ use App\Models\Post;
 use App\Models\Comment;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreCommentRequest;
+use App\Http\Requests\UpdateCommentRequest;
 
 class CommentController extends Controller
 {
@@ -20,10 +21,16 @@ class CommentController extends Controller
 
         return back()->with('success', 'Comment posted.');
     }
+
+    public function update(UpdateCommentRequest $request, Comment $comment)
+    {
+        $comment->update($request->validated());
+
+        return back()->with('success', 'Comment updated.');
+    }
     
     public function destroy(Comment $comment)
     {
-        $this->authorize('delete', $comment);
         $comment->delete();
         return back()->with('success', 'Comment deleted.');
     }
