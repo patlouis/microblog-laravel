@@ -124,7 +124,7 @@ export default function CommentModal({
 
                 <div className="p-4 overflow-y-auto flex-1 overscroll-contain">
                     {localComments.length > 0 ? (
-                        <div className="space-y-6 mb-6">
+                        <div className="space-y-6">
                             {localComments.map((comment) => (
                                 <div key={comment.id} className="flex gap-3 relative group">
                                     <div className="h-9 w-9 rounded-full bg-muted shrink-0 flex items-center justify-center text-xs font-bold text-muted-foreground z-10 ring-4 ring-background">
@@ -196,7 +196,7 @@ export default function CommentModal({
                                     </div>
                                 </div>
                             ))}
-                            <div ref={scrollEndRef} className="h-px" />
+                            <div ref={scrollEndRef} className="h-0 w-0" />
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center h-48 text-center opacity-60">

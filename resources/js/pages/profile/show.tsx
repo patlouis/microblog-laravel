@@ -1,6 +1,6 @@
 import { Head, router, usePage, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { BreadcrumbItem, User, Post, PaginatedPosts, Comment } from '@/types';
 import { route } from 'ziggy-js';
 import { UserPlus, UserCheck, Loader2, UserMinus, FileText, Clock } from 'lucide-react';
@@ -64,31 +64,57 @@ export default function ProfileShow({
         });
     };
 
+    // --- State Sync Helpers ---
+
+    const updatePostInState = useCallback((postId: number, updateFn: (content: any) => any) => {
+        setAllPosts((currentPosts) =>
+            currentPosts.map((p) => {
+                const content = p.post || p;
+                if (content.id === postId) {
+                    const updatedContent = updateFn(content);
+                    return p.post ? { ...p, post: updatedContent } : updatedContent;
+                }
+                return p;
+            })
+        );
+    }, []);
+
+    // --- Action Handlers ---
+
     const handlePostDelete = (deletedPostId: number) => {
-        setAllPosts((currentPosts) => currentPosts.filter(post => post.id !== deletedPostId));
+        setAllPosts((currentPosts) => currentPosts.filter(p => {
+            const id = p.post?.id || p.id;
+            return id !== deletedPostId;
+        }));
         if (selectedPost?.id === deletedPostId) {
             setSelectedPost(null);
         }
     };
 
     const handleCommentAdded = (postId: number, newComment: Comment) => {
-        setAllPosts((posts) =>
-            posts.map((p) => {
-                const content = p.post || p;
-                if (content.id === postId) {
-                    const updatedContent = {
-                        ...content,
-                        comments_count: content.comments_count + 1,
-                        comments: [...(content.comments || []), newComment],
-                    };
-                    if (selectedPost && (selectedPost.id === postId)) {
-                        setSelectedPost(updatedContent);
-                    }
-                    return p.post ? { ...p, post: updatedContent } : updatedContent;
-                }
-                return p;
-            })
-        );
+        updatePostInState(postId, (content) => ({
+            ...content,
+            comments_count: (content.comments_count || 0) + 1,
+            // Ensure appended to bottom
+            comments: [...(content.comments || []), newComment],
+        }));
+    };
+
+    const handleCommentUpdated = (postId: number, updatedComment: Comment) => {
+        updatePostInState(postId, (content) => ({
+            ...content,
+            comments: (content.comments || []).map((c: Comment) => 
+                c.id === updatedComment.id ? updatedComment : c
+            ),
+        }));
+    };
+
+    const handleCommentDeleted = (postId: number, commentId: number) => {
+        updatePostInState(postId, (content) => ({
+            ...content,
+            comments_count: Math.max(0, (content.comments_count || 1) - 1),
+            comments: (content.comments || []).filter((c: Comment) => c.id !== commentId),
+        }));
     };
 
     const toggleFollow = () => {
@@ -107,17 +133,18 @@ export default function ProfileShow({
         });
     };
     
+    // Sync modal with background updates
     useEffect(() => {
         if (selectedPost) {
             const updatedWrapper = allPosts.find(p => (p.post?.id === selectedPost.id) || (p.id === selectedPost.id));
             if (updatedWrapper) {
                  const content = updatedWrapper.post || updatedWrapper;
-                 if (content.comments_count !== selectedPost.comments_count) {
+                 if (JSON.stringify(content) !== JSON.stringify(selectedPost)) {
                      setSelectedPost(content);
                  }
             }
         }
-    }, [allPosts]);
+    }, [allPosts, selectedPost]);
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -244,6 +271,8 @@ export default function ProfileShow({
                     post={selectedPost}
                     onClose={() => setSelectedPost(null)}
                     onCommentAdded={handleCommentAdded}
+                    onCommentUpdated={handleCommentUpdated}
+                    onCommentDeleted={handleCommentDeleted}
                 />
             )}
         </AppLayout>

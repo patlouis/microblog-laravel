@@ -39,3 +39,20 @@ export function formatRelativeDate(dateString: string): string {
         day: 'numeric',
     });
 }
+
+export function formatFullDate(dateString: string): string {
+    const date = new Date(dateString);
+    const time = new Intl.DateTimeFormat('en-US', {
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: true,
+    }).format(date);
+
+    const day = new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    }).format(date);
+
+    return `${time} · ${day}`;
+}
