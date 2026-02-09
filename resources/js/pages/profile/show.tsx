@@ -1,6 +1,6 @@
 import { Head, router, usePage, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { BreadcrumbItem, User, Post, PaginatedPosts, Comment } from '@/types';
 import { route } from 'ziggy-js';
 import { UserPlus, UserCheck, Loader2, UserMinus, FileText, Clock } from 'lucide-react';
@@ -20,7 +20,8 @@ export default function ProfileShow({
     
     const [allPosts, setAllPosts] = useState<Post[]>(initialPosts.data);
     const [nextPageUrl, setNextPageUrl] = useState<string | null>(initialPosts.next_page_url);
-    const loadMoreTrigger = useRef<HTMLDivElement>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    
     const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
     const [isFollowLoading, setIsFollowLoading] = useState(false);
     const [isHoveringFollow, setIsHoveringFollow] = useState(false); 
@@ -30,21 +31,24 @@ export default function ProfileShow({
     const isOwnProfile = auth.user.id === profileUser.id;
 
     useEffect(() => {
-        if (!loadMoreTrigger.current || !nextPageUrl) return;
-
-        const observer = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting && nextPageUrl) {
+        const handleScroll = () => {
+            const scrollHeight = document.documentElement.scrollHeight;
+            const currentPosition = window.innerHeight + window.scrollY;
+            
+            if (currentPosition >= scrollHeight - 400 && nextPageUrl && !isLoading) {
                 loadMorePosts();
             }
-        }, { threshold: 1.0 });
+        };
 
-        observer.observe(loadMoreTrigger.current);
-
-        return () => observer.disconnect();
-    }, [nextPageUrl]);
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [nextPageUrl, isLoading]);
 
     const loadMorePosts = () => {
-        router.get(nextPageUrl!, {}, {
+        if (!nextPageUrl || isLoading) return;
+        setIsLoading(true);
+
+        router.get(nextPageUrl, {}, {
             preserveState: true,
             preserveScroll: true,
             only: ['posts'],
@@ -52,7 +56,11 @@ export default function ProfileShow({
                 const incoming = page.props.posts as PaginatedPosts;
                 setAllPosts((prev) => [...prev, ...incoming.data]);
                 setNextPageUrl(incoming.next_page_url);
+                setIsLoading(false);
+                
+                window.history.replaceState({}, '', route('profile.show', { user: profileUser.id }));
             },
+            onError: () => setIsLoading(false),
         });
     };
 
@@ -125,7 +133,7 @@ export default function ProfileShow({
             <div className="mx-auto max-w-xl w-full pt-4 pb-8 px-4 sm:px-0">
                 
                 <div className="rounded-xl border bg-background shadow-sm mb-8 overflow-hidden">
-                    <div className="h-28 bg-gradient-to-r from-primary/20 via-primary/10 to-background border-b" />
+                    <div className="h-28 bg-primary/20 border-b" />
                     
                     <div className="px-6 pb-6">
                         <div className="relative flex justify-center">
@@ -206,19 +214,26 @@ export default function ProfileShow({
                     ))}
                 </div>
 
-                <div ref={loadMoreTrigger} className="py-8 flex justify-center">
-                    {nextPageUrl ? (
+                <div className="py-8 flex justify-center">
+                    {isLoading ? (
                          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                     ) : (
-                        allPosts.length > 0 ? (
-                            <span className="text-xs text-muted-foreground">No more posts to load</span>
+                        nextPageUrl ? (
+                            <span className="opacity-0">Loading...</span> 
                         ) : (
-                            <div className="rounded-xl border border-dashed bg-muted/20 p-12 text-center flex flex-col items-center justify-center w-full">
-                                <div className="bg-background p-4 rounded-full mb-4 shadow-sm border border-border/50">
-                                    <FileText className="w-8 h-8 text-muted-foreground/60" />
+                            allPosts.length > 0 ? (
+                                <span className="text-xs text-muted-foreground">No more posts to load</span>
+                            ) : (
+                                <div className="rounded-xl border border-dashed bg-muted/20 p-12 text-center flex flex-col items-center justify-center w-full">
+                                    <div className="bg-background p-4 rounded-full mb-4 shadow-sm border border-border/50">
+                                        <FileText className="w-8 h-8 text-muted-foreground/60" />
+                                    </div>
+                                    <h3 className="text-lg font-medium text-foreground">No posts yet</h3>
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                        User has not uploaded any posts yet.
+                                    </p>
                                 </div>
-                                <h3 className="text-lg font-medium text-foreground">No posts yet</h3>
-                            </div>
+                            )
                         )
                     )}
                 </div>

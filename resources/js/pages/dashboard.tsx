@@ -2,6 +2,7 @@ import { Head, router, Link, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { route } from 'ziggy-js';
 import { useState, useEffect } from 'react';
+import { FileText, Loader2 } from 'lucide-react';
 import type { Post, PaginatedPosts, BreadcrumbItem, Comment } from '@/types';
 import PostCard from '@/components/post-card';
 import CommentModal from '@/components/comment-modal';
@@ -96,22 +97,22 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPos
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Home" />
             
-            <div className="mx-auto max-w-xl pt-4 pb-8 px-4 sm:px-0">
-                <div className="rounded-lg border bg-background p-4 shadow-sm mb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold shrink-0 overflow-hidden">
+            <div className="mx-auto max-w-xl pt-4 pb-8 px-4 sm:px-0 flex flex-col items-center w-full">
+                <div className="w-full rounded-lg border bg-background p-4 shadow-sm mb-4">
+                    <div className="flex items-center gap-3 w-full">
+                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold shrink-0 overflow-hidden border">
                             {auth.user.name.charAt(0).toUpperCase()}
                         </div>
                         <Link
                             href={route('posts.create')}
-                            className="flex-1 rounded-full bg-muted/50 px-4 py-2.5 text-sm text-muted-foreground hover:bg-muted cursor-pointer text-left"
+                            className="flex-1 rounded-full bg-muted/50 px-4 py-2.5 text-sm text-muted-foreground hover:bg-muted transition-colors cursor-pointer text-left"
                         >
                             What's on your mind, {auth.user.name.split(' ')[0]}?
                         </Link>
                     </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="w-full space-y-4">
                     {allPosts.map((post) => (
                         <PostCard 
                             key={post.id} 
@@ -122,9 +123,29 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPos
                     ))}
                 </div>
 
-                <div className="py-12 flex flex-col items-center">
-                    {isLoading && (
-                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                <div className={`${allPosts.length > 0 ? 'py-8' : 'pt-0'} w-full flex justify-center`}>
+                    {isLoading ? (
+                         <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    ) : (
+                        nextPageUrl ? (
+                            <span className="opacity-0">Scroll for more</span> 
+                        ) : (
+                            allPosts.length > 0 ? (
+                                <span className="text-xs text-muted-foreground font-medium">
+                                    You've reached the end of the feed
+                                </span>
+                            ) : (
+                                <div className="w-full rounded-xl border border-dashed bg-muted/20 p-12 text-center flex flex-col items-center justify-center animate-in fade-in zoom-in duration-300">
+                                    <div className="bg-background p-4 rounded-full mb-4 shadow-sm border border-border/50">
+                                        <FileText className="w-8 h-8 text-muted-foreground/60" />
+                                    </div>
+                                    <h3 className="text-lg font-medium text-foreground">No posts yet</h3>
+                                    <p className="text-sm text-muted-foreground mt-1 max-w-[250px] mx-auto">
+                                        Create your first post or follow people to see what's happening.
+                                    </p>
+                                </div>
+                            )
+                        )
                     )}
                 </div>
             </div>

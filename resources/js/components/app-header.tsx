@@ -32,7 +32,7 @@ import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useInitials } from '@/hooks/use-initials';
 import { cn, toUrl } from '@/lib/utils';
 import { dashboard } from '@/routes';
-import type { BreadcrumbItem, NavItem, SharedData } from '@/types';
+import type { BreadcrumbItem, NavItem, SharedData, User } from '@/types';
 import AppLogo from './app-logo';
 import AppLogoIcon from './app-logo-icon';
 
@@ -233,7 +233,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className="w-56" align="end">
-                                <UserMenuContent user={auth.user} />
+                                <UserMenuContent user={auth.user as User} />
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>

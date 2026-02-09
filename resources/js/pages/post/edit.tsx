@@ -12,7 +12,6 @@ type Post = {
 
 export default function Edit({ post: postData }: { post: Post }) {
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'My Posts', href: route('posts.index') },
         { title: 'Edit Post', href: route('posts.edit', postData.id) },
     ];
 
@@ -26,6 +25,14 @@ export default function Edit({ post: postData }: { post: Post }) {
     const [preview, setPreview] = useState<string | null>(
         postData.image_url ? `/storage/${postData.image_url}` : null
     );
+
+    const handleCancel = () => {
+        if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            window.location.href = route('dashboard');
+        }
+    };
 
     function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0] ?? null;
@@ -60,9 +67,13 @@ export default function Edit({ post: postData }: { post: Post }) {
                 <div className="mx-auto w-full max-w-2xl rounded-xl border border-sidebar-border/70 bg-background p-6 shadow-sm">
                     <div className="mb-6 flex items-center justify-between">
                         <h1 className="text-xl font-semibold">Edit Post</h1>
-                        <Link href={route('posts.index')} className="text-sm text-muted-foreground hover:text-foreground font-medium transition cursor-pointer">
+                        <button 
+                            type="button"
+                            onClick={handleCancel} 
+                            className="text-sm text-muted-foreground hover:text-foreground font-medium transition cursor-pointer border-none bg-transparent"
+                        >
                             Cancel
-                        </Link>
+                        </button>
                     </div>
 
                     <form onSubmit={submit} className="space-y-6">

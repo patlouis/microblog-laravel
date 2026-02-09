@@ -184,7 +184,7 @@ export default function PostCard({ post: initialPost, onCommentClick, onDelete }
                     }`}
                 >
                     <Heart size={18} fill={displayPost.liked ? 'currentColor' : 'none'} />
-                    <span>{displayPost.likes_count || 'Like'}</span>
+                    <span className="tabular-nums">{displayPost.likes_count}</span>
                 </button>
 
                 <button 
@@ -192,7 +192,7 @@ export default function PostCard({ post: initialPost, onCommentClick, onDelete }
                     className="flex items-center gap-2 hover:text-blue-500 transition-colors px-2 py-1 cursor-pointer rounded-md hover:bg-muted/50"
                 >
                     <MessageSquare size={18} />
-                    <span>{displayPost.comments_count || 'Comment'}</span>
+                    <span className="tabular-nums">{displayPost.comments_count}</span>
                 </button>
 
                 <button 
@@ -202,7 +202,7 @@ export default function PostCard({ post: initialPost, onCommentClick, onDelete }
                     }`}
                 >
                     <Repeat2 size={18} />
-                    <span>{displayPost.shares_count || 'Share'}</span>
+                    <span className="tabular-nums">{displayPost.shares_count}</span>
                 </button>
             </div>
         </div>
