@@ -3,7 +3,7 @@ import AppLayout from '@/layouts/app-layout';
 import { route } from 'ziggy-js';
 import { useState, useEffect } from 'react';
 import { formatRelativeDate } from '@/lib/utils';
-import { X, MessageCircle, FileText } from 'lucide-react';
+import { X, MessageCircle } from 'lucide-react';
 import type { Post, PaginatedPosts, BreadcrumbItem, Comment } from '@/types';
 import PostCard from '@/components/post-card';
 
@@ -61,6 +61,10 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPos
             },
             onError: () => setIsLoading(false),
         });
+    };
+
+    const handlePostDelete = (deletedPostId: number) => {
+        setAllPosts((currentPosts) => currentPosts.filter(post => post.id !== deletedPostId));
     };
 
     const handleCommentSubmit = (e: React.FormEvent) => {
@@ -131,6 +135,7 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPos
                             key={post.id} 
                             post={post} 
                             onCommentClick={(targetPost) => setSelectedPost(targetPost)} 
+                            onDelete={handlePostDelete}
                         />
                     ))}
                 </div>

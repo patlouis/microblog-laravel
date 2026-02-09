@@ -65,6 +65,11 @@ export default function ProfileShow({
         });
     };
 
+    // New function to handle deletion from state
+    const handlePostDelete = (deletedPostId: number) => {
+        setAllPosts((currentPosts) => currentPosts.filter(post => post.id !== deletedPostId));
+    };
+
     const toggleFollow = () => {
         if (isFollowLoading) return;
         
@@ -214,6 +219,7 @@ export default function ProfileShow({
                             key={post.id} 
                             post={post} 
                             onCommentClick={(targetPost) => setSelectedPost(targetPost)} 
+                            onDelete={handlePostDelete} // Passed callback here
                         />
                     ))}
                 </div>

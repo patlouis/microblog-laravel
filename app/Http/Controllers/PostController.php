@@ -34,7 +34,7 @@ class PostController extends Controller
             'image_url' => $imageUrl,
         ]);
 
-        return redirect()->route('posts.index')->with('success', 'Post created successfully!');
+        return redirect()->route('dashboard')->with('success', 'Post created successfully!');
     }
 
     /**
@@ -83,7 +83,7 @@ class PostController extends Controller
         $post->content = $validated['content'];
         $post->save();
 
-        return redirect()->route('posts.index')->with('success', 'Post updated successfully!');
+        return redirect()->route('dashboard')->with('success', 'Post updated successfully!');
     }
 
     /**
@@ -97,6 +97,6 @@ class PostController extends Controller
         
         $post->delete();
 
-        return redirect()->back()->with('success', 'Post deleted successfully!');
+        return redirect()->back()->with('success', 'Post deleted.');
     }
 }

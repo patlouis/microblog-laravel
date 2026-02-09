@@ -1,25 +1,43 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, router, usePage } from '@inertiajs/react';
-import { Heart, MessageSquare, Repeat2, MoreHorizontal, AlertCircle } from 'lucide-react';
+import { Heart, MessageSquare, Repeat2, MoreHorizontal, AlertCircle, Pencil, Trash2 } from 'lucide-react';
 import { formatRelativeDate } from '@/lib/utils';
 import { route } from 'ziggy-js';
-import type { Post, User } from '@/types';
+import type { Post } from '@/types';
 
 interface Props {
     post: Post;
     onCommentClick: (post: Post) => void;
+    onDelete: (id: number) => void;
 }
 
-export default function PostCard({ post: initialPost, onCommentClick }: Props) {
+export default function PostCard({ post: initialPost, onCommentClick, onDelete }: Props) {
+    const { auth } = usePage().props as any;
     const [post, setPost] = useState<Post>(initialPost);
+    const [showMenu, setShowMenu] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         setPost(initialPost);
     }, [initialPost]);
 
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setShowMenu(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
     const isShare = post.post !== undefined;
     const displayPost = isShare ? post.post : post;
     const sharer = isShare ? post.user : null;
+    const isOwner = auth.user.id === post.user.id;
 
     if (!displayPost) {
         return (
@@ -63,6 +81,23 @@ export default function PostCard({ post: initialPost, onCommentClick }: Props) {
         });
     };
 
+    const handleEdit = () => {
+        setShowMenu(false);
+        router.get(route('posts.edit', post.id));
+    };
+
+    const handleDelete = () => {
+        setShowMenu(false);
+        if (confirm('Are you sure you want to delete this?')) {
+            router.delete(route('posts.destroy', post.id), {
+                preserveScroll: true,
+                onSuccess: () => {
+                    onDelete(post.id);
+                }
+            });
+        }
+    };
+
     return (
         <div className="rounded-lg border bg-background p-4 shadow-sm relative transition-all hover:shadow-md">
             
@@ -92,9 +127,41 @@ export default function PostCard({ post: initialPost, onCommentClick }: Props) {
                     </div>
                 </div>
 
-                <button className="text-muted-foreground hover:bg-muted p-1.5 rounded-full transition-colors -mr-2">
-                    <MoreHorizontal size={20} />
-                </button>
+                {isOwner && (
+                    <div className="relative" ref={menuRef}>
+                        <button 
+                            onClick={() => setShowMenu(!showMenu)}
+                            className="text-muted-foreground hover:bg-muted p-1.5 rounded-full transition-colors -mr-2 cursor-pointer"
+                        >
+                            <MoreHorizontal size={20} />
+                        </button>
+
+                        {showMenu && (
+                            <div className="absolute right-0 top-8 z-20 w-32 rounded-md border bg-background shadow-lg py-1 animate-in fade-in zoom-in-95 duration-100">
+                                <button 
+                                    onClick={handleEdit}
+                                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted text-left transition-colors cursor-pointer"
+                                >
+                                    <Pencil size={14} />
+                                    Edit
+                                </button>
+                                <button 
+                                    onClick={handleDelete}
+                                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 text-left transition-colors cursor-pointer"
+                                >
+                                    <Trash2 size={14} />
+                                    Delete
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
+                
+                {!isOwner && (
+                    <button className="text-muted-foreground/50 cursor-default p-1.5 -mr-2">
+                         <MoreHorizontal size={20} />
+                    </button>
+                )}
             </div>
 
             <p className="mb-3 text-[15px] leading-relaxed whitespace-pre-wrap">{displayPost.content}</p>
