@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react'; 
-import { User, Home, CirclePlus } from 'lucide-react'; 
+import { CircleUser, Home, CirclePlus } from 'lucide-react'; 
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -28,7 +28,7 @@ export function AppSidebar() {
         {
             title: 'Profile',
             href: route('profile.show', { user: auth.user.id }),
-            icon: User,
+            icon: CircleUser,
         },
         {
             title: 'Create Post',
