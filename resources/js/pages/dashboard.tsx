@@ -3,8 +3,9 @@ import AppLayout from '@/layouts/app-layout';
 import { route } from 'ziggy-js';
 import { useState, useEffect } from 'react';
 import { formatRelativeDate } from '@/lib/utils';
-import { MessageSquare, Heart, Share2, X, MessageCircle, AlertCircle, Repeat2 } from 'lucide-react';
+import { X, MessageCircle, FileText } from 'lucide-react';
 import type { Post, PaginatedPosts, BreadcrumbItem, Comment } from '@/types';
+import PostCard from '@/components/post-card';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -59,55 +60,6 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPos
                 window.history.replaceState({}, '', route('dashboard'));
             },
             onError: () => setIsLoading(false),
-        });
-    };
-
-    const toggleLike = (postId: number) => {
-        setAllPosts((posts) =>
-            posts.map((p) => {
-                const content = p.post || p; 
-                
-                if (content.id === postId) {
-                     const updatedContent = { 
-                         ...content, 
-                         liked: !content.liked, 
-                         likes_count: content.liked ? content.likes_count - 1 : content.likes_count + 1 
-                     };
-                     return p.post ? { ...p, post: updatedContent } : updatedContent;
-                }
-                return p;
-            })
-        );
-
-        router.post(route('posts.like', postId), {}, { preserveScroll: true });
-    };
-
-    const toggleShare = (postToShare: Post) => {
-        const isCurrentlyShared = postToShare.shared;
-        const newCount = isCurrentlyShared ? Math.max(0, postToShare.shares_count - 1) : postToShare.shares_count + 1;
-
-        setAllPosts((posts) => 
-            posts.map(p => {
-                const content = p.post || p;
-                
-                if (content.id === postToShare.id) {
-                    const updatedContent = { 
-                        ...content, 
-                        shared: !isCurrentlyShared, 
-                        shares_count: newCount 
-                    };
-                    return p.post ? { ...p, post: updatedContent } : updatedContent;
-                }
-                return p;
-            })
-        );
-
-        router.post(route('posts.share', postToShare.id), {}, {
-            preserveScroll: true,
-            onError: () => {
-                alert("Action failed");
-                window.location.reload(); 
-            }
         });
     };
 
@@ -174,114 +126,39 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPos
                 </div>
 
                 <div className="space-y-4">
-                    {allPosts.map((item) => {
-                        const isShare = item.post !== undefined;
-                        const displayPost = isShare ? item.post : item;
-                        const sharer = isShare ? item.user : null;
-
-                        if (!displayPost) {
-                             return (
-                                 <div key={`deleted-${item.id}`} className="rounded-lg border bg-background p-4 shadow-sm text-muted-foreground text-sm flex items-center gap-2">
-                                     <AlertCircle size={16} />
-                                     <span>This shared post is no longer available.</span>
-                                 </div>
-                             );
-                        }
-
-                        return (
-                            <div key={`${isShare ? 's' : 'p'}-${item.id}`} className="rounded-lg border bg-background p-4 shadow-sm relative transition-all hover:shadow-md">
-                                
-                                {/* SHARE HEADER */}
-                                {isShare && (
-                                    <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground mb-2 pl-12">
-                                        <Repeat2 size={12} className="text-green-600" />
-                                        <span>{sharer?.name} shared</span>
-                                    </div>
-                                )}
-
-                                {/* POST HEADER */}
-                                <div className="mb-3 flex items-start justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold shrink-0">
-                                            {displayPost.user.name.charAt(0).toUpperCase()}
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className="text-sm font-semibold truncate">{displayPost.user.name}</p>
-                                            <p className="text-xs text-muted-foreground truncate">{displayPost.user.email}</p>
-                                        </div>
-                                    </div>
-                                    <p className="text-[11px] font-medium text-muted-foreground">
-                                        {formatRelativeDate(displayPost.created_at)}
-                                    </p>
-                                </div>
-
-                                {/* 3. Post Content */}
-                                <p className="mb-3 text-[15px] leading-relaxed whitespace-pre-wrap">{displayPost.content}</p>
-
-                                {displayPost.image_url && (
-                                    <div className="mt-3 overflow-hidden rounded-md border bg-muted/20">
-                                        <img src={`/storage/${displayPost.image_url}`} className="w-full h-auto object-cover max-h-[500px]" alt="Content" />
-                                    </div>
-                                )}
-
-                                <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-3 text-sm text-muted-foreground">
-                                    {/* LIKE */}
-                                    <button
-                                        onClick={() => toggleLike(displayPost.id)}
-                                        className={`flex items-center gap-2 transition-colors px-2 py-1 cursor-pointer rounded-md hover:bg-muted/50 ${
-                                            displayPost.liked ? 'text-rose-500' : 'hover:text-rose-500'
-                                        }`}
-                                    >
-                                        <Heart size={18} fill={displayPost.liked ? 'currentColor' : 'none'} />
-                                        <span>{displayPost.likes_count || 'Like'}</span>
-                                    </button>
-
-                                    {/* COMMENT */}
-                                    <button 
-                                        onClick={() => setSelectedPost(displayPost)}
-                                        className="flex items-center gap-2 hover:text-blue-500 transition-colors px-2 py-1 cursor-pointer rounded-md hover:bg-muted/50"
-                                    >
-                                        <MessageSquare size={18} />
-                                        <span>{displayPost.comments_count || 'Comment'}</span>
-                                    </button>
-
-                                    {/* SHARE */}
-                                    <button 
-                                        onClick={() => toggleShare(displayPost)}
-                                        className={`flex items-center gap-2 transition-colors px-2 py-1 cursor-pointer rounded-md hover:bg-muted/50 ${
-                                            displayPost.shared ? 'text-green-600' : 'hover:text-green-600'
-                                        }`}
-                                    >
-                                        <Repeat2 size={18} />
-                                        <span>{displayPost.shares_count || 'Share'}</span>
-                                    </button>
-                                </div>
-                            </div>
-                        );
-                    })}
+                    {allPosts.map((post) => (
+                        <PostCard 
+                            key={post.id} 
+                            post={post} 
+                            onCommentClick={(targetPost) => setSelectedPost(targetPost)} 
+                        />
+                    ))}
                 </div>
 
                 <div className="py-12 flex flex-col items-center">
-                    {isLoading && <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />}
+                    {isLoading && (
+                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    )}
                 </div>
             </div>
 
-            {/* COMMENT MODAL */}
             {selectedPost && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedPost(null)} />
-                    <div className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-background shadow-2xl animate-in fade-in zoom-in duration-200 flex flex-col max-h-[85vh]">
-                        <div className="flex items-center justify-between border-b p-4 shrink-0 bg-background/95 backdrop-blur">
+                    <div className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-background shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
+                        <div className="flex items-center justify-between border-b p-4 shrink-0 bg-background/95 backdrop-blur z-10">
                             <h3 className="text-sm font-bold uppercase tracking-widest">Comments</h3>
-                            <button onClick={() => setSelectedPost(null)} className="rounded-full p-1 hover:bg-muted transition-colors"><X size={20} /></button>
+                            <button onClick={() => setSelectedPost(null)} className="rounded-full p-1 hover:bg-muted transition-colors">
+                                <X size={20} />
+                            </button>
                         </div>
 
-                        <div className="p-4 overflow-y-auto flex-1">
+                        <div className="p-4 overflow-y-auto flex-1 overscroll-contain">
                             {selectedPost.comments && selectedPost.comments.length > 0 ? (
                                 <div className="space-y-6 mb-6">
                                     {selectedPost.comments.map((comment) => (
                                         <div key={comment.id} className="flex gap-3 relative">
-                                            <div className="h-10 w-10 rounded-full bg-muted shrink-0 flex items-center justify-center text-xs font-bold text-muted-foreground z-10 ring-4 ring-background">
+                                            <div className="h-9 w-9 rounded-full bg-muted shrink-0 flex items-center justify-center text-xs font-bold text-muted-foreground z-10 ring-4 ring-background">
                                                 {comment.user.name.charAt(0)}
                                             </div>
                                             <div className="flex-1">
@@ -289,14 +166,16 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPos
                                                     <p className="text-sm font-bold">{comment.user.name}</p>
                                                     <span className="text-[10px] text-muted-foreground">{formatRelativeDate(comment.created_at)}</span>
                                                 </div>
-                                                <p className="text-sm text-foreground/80 mt-0.5 whitespace-pre-wrap">{comment.body}</p>
+                                                <p className="text-sm text-foreground/80 mt-0.5 whitespace-pre-wrap leading-relaxed">{comment.body}</p>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center h-48 text-center opacity-60">
-                                    <div className="bg-muted/50 p-4 rounded-full mb-3"><MessageCircle className="w-8 h-8 text-muted-foreground" /></div>
+                                    <div className="bg-muted/50 p-4 rounded-full mb-3">
+                                        <MessageCircle className="w-8 h-8 text-muted-foreground" />
+                                    </div>
                                     <p className="text-sm font-medium">No comments yet</p>
                                     <p className="text-xs text-muted-foreground">Be the first to share your thoughts!</p>
                                 </div>
@@ -305,13 +184,13 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPos
 
                         <div className="p-4 border-t bg-background z-20 shrink-0">
                             <div className="flex gap-3">
-                                <div className="h-10 w-10 rounded-full bg-primary shrink-0 flex items-center justify-center font-bold text-primary-foreground">
+                                <div className="h-9 w-9 rounded-full bg-primary shrink-0 flex items-center justify-center font-bold text-primary-foreground text-sm">
                                     {auth.user.name.charAt(0)}
                                 </div>
                                 <form onSubmit={handleCommentSubmit} className="flex-1">
                                     <textarea
                                         placeholder="Write a comment..."
-                                        className="w-full min-h-[80px] max-h-[150px] resize-none border-none bg-transparent p-0 text-lg placeholder:text-muted-foreground/60 focus:ring-0 outline-none"
+                                        className="w-full min-h-[44px] max-h-[120px] resize-none border border-input rounded-md bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:ring-1 focus:ring-primary outline-none"
                                         value={commentData.body}
                                         onChange={e => setCommentData('body', e.target.value)}
                                         autoFocus

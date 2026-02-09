@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react'; 
-import { LayoutGrid, User, Home, FileText } from 'lucide-react'; 
+import { User, Home, CirclePlus } from 'lucide-react'; 
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -26,14 +26,14 @@ export function AppSidebar() {
             icon: Home,
         },
         {
-            title: 'My Posts',
-            href: route('posts.index'),
-            icon: FileText,
-        },
-        {
             title: 'Profile',
             href: route('profile.show', { user: auth.user.id }),
             icon: User,
+        },
+        {
+            title: 'Create Post',
+            href: route('posts.create'),
+            icon: CirclePlus,
         },
     ];
 

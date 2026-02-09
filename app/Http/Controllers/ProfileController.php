@@ -13,7 +13,11 @@ class ProfileController extends Controller
 {
     public function show(Request $request, User $user)
     {
-        $user->loadCount(['followers', 'following', 'posts']);
+        $user->loadCount([
+            'followers', 
+            'following', 
+            'posts'
+        ]);
 
         $isFollowing = $request->user() 
             ? $request->user()->isFollowing($user) 

@@ -11,21 +11,6 @@ use Inertia\Inertia;
 
 class PostController extends Controller
 {
-    /**
-     * Display user's own posts.
-     */
-    public function index()
-    {
-        $posts = auth()->user()->posts()
-            ->with('user')
-            ->latest()
-            ->get();
-
-        return Inertia::render('post/index', [
-            'posts' => $posts,
-        ]);
-    }
-
     public function create()
     {
         return Inertia::render('post/create', []);
