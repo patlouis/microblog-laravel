@@ -178,7 +178,7 @@ export default function ProfileShow({
 
                                 <Link 
                                     href={route('profile.followers', profileUser.id)} 
-                                    className="flex flex-col items-center justify-center border-r border-border/50 hover:bg-muted/10 transition-colors cursor-pointer"
+                                    className="flex flex-col items-center justify-center border-r border-border/50 transition-colors cursor-pointer"
                                 >
                                     <span className="text-xl font-bold text-foreground">{profileUser.followers_count ?? 0}</span>
                                     <span className="text-[10px] uppercase tracking-[0.15em] font-bold text-muted-foreground">Followers</span>
@@ -186,7 +186,7 @@ export default function ProfileShow({
 
                                 <Link 
                                     href={route('profile.following', profileUser.id)} 
-                                    className="flex flex-col items-center justify-center hover:bg-muted/10 transition-colors cursor-pointer"
+                                    className="flex flex-col items-center justify-center transition-colors cursor-pointer"
                                 >
                                     <span className="text-xl font-bold text-foreground">{profileUser.following_count ?? 0}</span>
                                     <span className="text-[10px] uppercase tracking-[0.15em] font-bold text-muted-foreground">Following</span>

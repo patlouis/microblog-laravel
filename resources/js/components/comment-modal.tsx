@@ -8,35 +8,35 @@ import React, { useState, useRef, useEffect } from 'react';
 interface Props {
     post: Post;
     onClose: () => void;
-    onCommentAdded?: (postId: number, newComment: Comment) => void; 
+    onCommentAdded?: (postId: number, newComment: Comment) => void;
+    onCommentUpdated?: (postId: number, updatedComment: Comment) => void;
+    onCommentDeleted?: (postId: number, commentId: number) => void;
 }
 
-export default function CommentModal({ post, onClose, onCommentAdded }: Props) {
+export default function CommentModal({ 
+    post, 
+    onClose, 
+    onCommentAdded, 
+    onCommentUpdated, 
+    onCommentDeleted 
+}: Props) {
     const { auth } = usePage().props as any;
     const user = auth.user as User;
 
     const [localComments, setLocalComments] = useState<Comment[]>(post.comments || []);
-
-    const { 
-        data, 
-        setData, 
-        post: submit, 
-        processing, 
-        reset 
-    } = useForm({
-        body: '',
-    });
-
     const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
     const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
     const [editBody, setEditBody] = useState('');
     
     const menuRef = useRef<HTMLDivElement>(null);
+    const scrollEndRef = useRef<HTMLDivElement>(null);
+
+    const { data, setData, post: submit, processing, reset } = useForm({
+        body: '',
+    });
 
     useEffect(() => {
-        if(post.comments) {
-            setLocalComments(post.comments);
-        }
+        if(post.comments) setLocalComments(post.comments);
     }, [post.comments]);
 
     useEffect(() => {
@@ -51,9 +51,9 @@ export default function CommentModal({ post, onClose, onCommentAdded }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+        const tempId = Date.now();
         const newComment: Comment = {
-            id: Date.now(), 
+            id: tempId, 
             body: data.body,
             created_at: new Date().toISOString(),
             user: user,
@@ -62,12 +62,12 @@ export default function CommentModal({ post, onClose, onCommentAdded }: Props) {
         submit(route('comments.store', post.id), {
             preserveScroll: true,
             onSuccess: () => {
-                setLocalComments((prev) => [newComment, ...prev]);
-                
-                if (onCommentAdded) {
-                    onCommentAdded(post.id, newComment);
-                }
+                setLocalComments((prev) => [...prev, newComment]);
+                if (onCommentAdded) onCommentAdded(post.id, newComment);
                 reset();
+                setTimeout(() => {
+                    scrollEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                }, 100);
             },
         });
     };
@@ -78,36 +78,36 @@ export default function CommentModal({ post, onClose, onCommentAdded }: Props) {
                 preserveScroll: true,
                 onSuccess: () => {
                     setLocalComments((prev) => prev.filter(c => c.id !== commentId));
+                    if (onCommentDeleted) onCommentDeleted(post.id, commentId);
                     setActiveMenuId(null);
                 },
             });
         }
     };
 
-    const startEditing = (comment: Comment) => {
-        setEditingCommentId(comment.id);
-        setEditBody(comment.body);
-        setActiveMenuId(null);
-    };
-
-    const cancelEditing = () => {
-        setEditingCommentId(null);
-        setEditBody('');
-    };
-
     const saveEdit = (commentId: number) => {
-        router.put(route('comments.update', commentId), {
-            body: editBody
-        }, {
+        router.put(route('comments.update', commentId), { body: editBody }, {
             preserveScroll: true,
             onSuccess: () => {
                 setLocalComments((prev) => prev.map(c => 
                     c.id === commentId ? { ...c, body: editBody } : c
                 ));
+                
+                if (onCommentUpdated) {
+                    const updated = localComments.find(c => c.id === commentId);
+                    if (updated) onCommentUpdated(post.id, { ...updated, body: editBody });
+                }
+                
                 setEditingCommentId(null);
                 setEditBody('');
             }
         });
+    };
+
+    const startEditing = (comment: Comment) => {
+        setEditingCommentId(comment.id);
+        setEditBody(comment.body);
+        setActiveMenuId(null);
     };
 
     return (
@@ -123,7 +123,7 @@ export default function CommentModal({ post, onClose, onCommentAdded }: Props) {
                 </div>
 
                 <div className="p-4 overflow-y-auto flex-1 overscroll-contain">
-                    {localComments && localComments.length > 0 ? (
+                    {localComments.length > 0 ? (
                         <div className="space-y-6 mb-6">
                             {localComments.map((comment) => (
                                 <div key={comment.id} className="flex gap-3 relative group">
@@ -136,7 +136,7 @@ export default function CommentModal({ post, onClose, onCommentAdded }: Props) {
                                             <div className="flex items-center gap-2">
                                                 <p className="text-sm font-bold">{comment.user.name}</p>
                                                 <span className="text-[10px] text-muted-foreground">•</span>
-                                                <span className="text-[10px] text-muted-foreground hover:underline cursor-default">
+                                                <span className="text-[10px] text-muted-foreground">
                                                     {formatRelativeDate(comment.created_at)}
                                                 </span>
                                             </div>
@@ -145,23 +145,17 @@ export default function CommentModal({ post, onClose, onCommentAdded }: Props) {
                                                 <div className="relative">
                                                     <button 
                                                         onClick={() => setActiveMenuId(activeMenuId === comment.id ? null : comment.id)}
-                                                        className="p-1 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
+                                                        className="p-1 rounded-full text-muted-foreground hover:bg-muted cursor-pointer"
                                                     >
                                                         <MoreHorizontal size={16} />
                                                     </button>
                                                     
                                                     {activeMenuId === comment.id && (
                                                         <div ref={menuRef} className="absolute right-0 top-6 z-20 w-32 rounded-md border bg-background shadow-lg py-1 animate-in fade-in zoom-in-95 duration-100">
-                                                            <button 
-                                                                onClick={() => startEditing(comment)}
-                                                                className="flex w-full items-center gap-2 px-3 py-2 text-xs font-medium hover:bg-muted text-left cursor-pointer"
-                                                            >
+                                                            <button onClick={() => startEditing(comment)} className="flex w-full items-center gap-2 px-3 py-2 text-xs font-medium hover:bg-muted text-left cursor-pointer">
                                                                 <Pencil size={12} /> Edit
                                                             </button>
-                                                            <button 
-                                                                onClick={() => handleDelete(comment.id)}
-                                                                className="flex w-full items-center gap-2 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 text-left cursor-pointer"
-                                                            >
+                                                            <button onClick={() => handleDelete(comment.id)} className="flex w-full items-center gap-2 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 text-left cursor-pointer">
                                                                 <Trash2 size={12} /> Delete
                                                             </button>
                                                         </div>
@@ -176,24 +170,19 @@ export default function CommentModal({ post, onClose, onCommentAdded }: Props) {
                                                     value={editBody}
                                                     onChange={(e) => setEditBody(e.target.value)}
                                                     className="w-full min-h-[60px] rounded-md border border-input bg-transparent px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none resize-none"
-                                                    ref={(tag) => {
-                                                        if (tag) {
-                                                            tag.setSelectionRange(editBody.length, editBody.length);
-                                                        }
-                                                    }}
                                                     autoFocus
+                                                    onFocus={(e) => {
+                                                        const val = e.target.value;
+                                                        e.target.value = '';
+                                                        e.target.value = val;
+                                                    }}
                                                 />
                                                 <div className="flex gap-2 justify-end mt-2">
-                                                    <button 
-                                                        onClick={cancelEditing}
-                                                        className="text-xs font-medium px-3 py-1.5 rounded-md hover:bg-muted transition-colors cursor-pointer"
-                                                    >
-                                                        Cancel
-                                                    </button>
+                                                    <button onClick={() => setEditingCommentId(null)} className="text-xs font-medium px-3 py-1.5 rounded-md hover:bg-muted cursor-pointer">Cancel</button>
                                                     <button 
                                                         onClick={() => saveEdit(comment.id)}
                                                         disabled={!editBody.trim()}
-                                                        className="text-xs font-bold px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer"
+                                                        className="text-xs font-bold px-3 py-1.5 rounded-md bg-primary text-primary-foreground disabled:opacity-50 cursor-pointer"
                                                     >
                                                         Save
                                                     </button>
@@ -207,14 +196,12 @@ export default function CommentModal({ post, onClose, onCommentAdded }: Props) {
                                     </div>
                                 </div>
                             ))}
+                            <div ref={scrollEndRef} className="h-px" />
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center h-48 text-center opacity-60">
-                            <div className="bg-muted/50 p-4 rounded-full mb-3">
-                                <MessageCircle className="w-8 h-8 text-muted-foreground" />
-                            </div>
+                            <MessageCircle className="w-8 h-8 text-muted-foreground mb-3" />
                             <p className="text-sm font-medium">No comments yet</p>
-                            <p className="text-xs text-muted-foreground">Be the first to share your thoughts!</p>
                         </div>
                     )}
                 </div>
@@ -227,7 +214,7 @@ export default function CommentModal({ post, onClose, onCommentAdded }: Props) {
                         <form onSubmit={handleSubmit} className="flex-1">
                             <textarea
                                 placeholder="Write a comment..."
-                                className="w-full min-h-[44px] max-h-[120px] resize-none border border-input rounded-md bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:ring-1 focus:ring-primary outline-none"
+                                className="w-full min-h-[44px] max-h-[120px] resize-none border border-input rounded-md bg-transparent px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none"
                                 value={data.body}
                                 onChange={e => setData('body', e.target.value)}
                             />
@@ -235,7 +222,7 @@ export default function CommentModal({ post, onClose, onCommentAdded }: Props) {
                                 <button 
                                     type="submit"
                                     disabled={processing || !data.body.trim()} 
-                                    className="rounded-full bg-primary px-4 py-1.5 text-sm font-bold text-primary-foreground transition-opacity disabled:opacity-50 hover:opacity-90 cursor-pointer"
+                                    className="rounded-full bg-primary px-4 py-1.5 text-sm font-bold text-primary-foreground disabled:opacity-50 cursor-pointer"
                                 >
                                     {processing ? 'Posting...' : 'Reply'}
                                 </button>

@@ -1,7 +1,7 @@
 import { Head, router, Link, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { route } from 'ziggy-js';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FileText, Loader2 } from 'lucide-react';
 import type { Post, PaginatedPosts, BreadcrumbItem, Comment } from '@/types';
 import PostCard from '@/components/post-card';
@@ -20,7 +20,6 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPos
     const [allPosts, setAllPosts] = useState<Post[]>(initialPosts.data);
     const [nextPageUrl, setNextPageUrl] = useState<string | null>(initialPosts.next_page_url);
     const [isLoading, setIsLoading] = useState(false);
-    
     const [selectedPost, setSelectedPost] = useState<Post | null>(null);
 
     useEffect(() => {
@@ -54,31 +53,51 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPos
         });
     };
 
-    const handlePostDelete = (deletedPostId: number) => {
-        setAllPosts((currentPosts) => currentPosts.filter(post => post.id !== deletedPostId));
-        if (selectedPost?.id === deletedPostId) {
-            setSelectedPost(null);
-        }
-    };
-
-    const handleCommentAdded = (postId: number, newComment: Comment) => {
-        setAllPosts((posts) =>
-            posts.map((p) => {
+    const updatePostInState = useCallback((postId: number, updateFn: (content: any) => any) => {
+        setAllPosts((currentPosts) =>
+            currentPosts.map((p) => {
                 const content = p.post || p;
                 if (content.id === postId) {
-                    const updatedContent = {
-                        ...content,
-                        comments_count: content.comments_count + 1,
-                        comments: [...(content.comments || []), newComment],
-                    };
-                    if (selectedPost && (selectedPost.id === postId)) {
-                        setSelectedPost(updatedContent);
-                    }
+                    const updatedContent = updateFn(content);
                     return p.post ? { ...p, post: updatedContent } : updatedContent;
                 }
                 return p;
             })
         );
+    }, []);
+
+    const handlePostDelete = (deletedPostId: number) => {
+        setAllPosts((currentPosts) => currentPosts.filter(p => {
+            const id = p.post?.id || p.id;
+            return id !== deletedPostId;
+        }));
+        if (selectedPost?.id === deletedPostId) setSelectedPost(null);
+    };
+
+    const handleCommentAdded = (postId: number, newComment: Comment) => {
+        updatePostInState(postId, (content) => ({
+            ...content,
+            comments_count: (content.comments_count || 0) + 1,
+            // FIXED: Spread existing comments FIRST, then add new one at the end
+            comments: [...(content.comments || []), newComment], 
+        }));
+    };
+
+    const handleCommentUpdated = (postId: number, updatedComment: Comment) => {
+        updatePostInState(postId, (content) => ({
+            ...content,
+            comments: (content.comments || []).map((c: Comment) => 
+                c.id === updatedComment.id ? updatedComment : c
+            ),
+        }));
+    };
+
+    const handleCommentDeleted = (postId: number, commentId: number) => {
+        updatePostInState(postId, (content) => ({
+            ...content,
+            comments_count: Math.max(0, (content.comments_count || 1) - 1),
+            comments: (content.comments || []).filter((c: Comment) => c.id !== commentId),
+        }));
     };
 
     useEffect(() => {
@@ -86,12 +105,12 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPos
             const updatedWrapper = allPosts.find(p => (p.post?.id === selectedPost.id) || (p.id === selectedPost.id));
             if (updatedWrapper) {
                  const content = updatedWrapper.post || updatedWrapper;
-                 if (content.comments_count !== selectedPost.comments_count) {
-                     setSelectedPost(content);
+                 if (JSON.stringify(content) !== JSON.stringify(selectedPost)) {
+                    setSelectedPost(content);
                  }
             }
         }
-    }, [allPosts]);
+    }, [allPosts, selectedPost]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -155,6 +174,8 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPos
                     post={selectedPost}
                     onClose={() => setSelectedPost(null)}
                     onCommentAdded={handleCommentAdded}
+                    onCommentUpdated={handleCommentUpdated}
+                    onCommentDeleted={handleCommentDeleted}
                 />
             )}
         </AppLayout>
