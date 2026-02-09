@@ -50,4 +50,25 @@ class Post extends Model
     {
         return $this->hasMany(Share::class);
     }
+
+    protected static function booted()
+    {
+        static::deleting(function ($post) {
+            if ($post->isForceDeleting()) {
+                $post->comments()->forceDelete();
+                $post->likes()->forceDelete();
+                $post->shares()->forceDelete();
+            } else {
+                $post->comments()->delete();
+                $post->likes()->delete();
+                $post->shares()->delete();
+            }
+        });
+
+        static::restoring(function ($post) {
+            $post->comments()->restore();
+            $post->likes()->restore();
+            $post->shares()->restore();
+        });
+    }
 }

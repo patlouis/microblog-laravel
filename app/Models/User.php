@@ -112,11 +112,20 @@ class User extends Authenticatable implements MustVerifyEmail
                 $user->posts()->forceDelete();
                 $user->likes()->forceDelete();
                 $user->comments()->forceDelete();
+                $user->shares()->forceDelete();
             } else {
                 $user->posts()->delete();
                 $user->likes()->delete();
                 $user->comments()->delete();
+                $user->shares()->delete();
             }
+        });
+
+        static::restoring(function (User $user) {
+            $user->posts()->restore();
+            $user->likes()->restore();
+            $user->comments()->restore();
+            $user->shares()->restore();
         });
     }
 }
