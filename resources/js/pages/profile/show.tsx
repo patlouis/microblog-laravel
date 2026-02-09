@@ -1,14 +1,10 @@
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router, usePage, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { useState, useEffect } from 'react';
 import { formatRelativeDate } from '@/lib/utils';
-import { BreadcrumbItem } from '@/types';
+import { BreadcrumbItem, User, Post, PaginatedPosts } from '@/types';
 import { route } from 'ziggy-js';
-import { UserPlus, UserCheck, Loader2, UserMinus, FileText } from 'lucide-react';
-
-type User = { id: number; name: string; email: string };
-type Post = { id: number; content: string; image_url?: string; created_at: string; user: User };
-type PaginatedPosts = { data: Post[]; next_page_url: string | null };
+import { UserPlus, UserCheck, Loader2, UserMinus, FileText, Clock } from 'lucide-react';
 
 export default function ProfileShow({ 
     profileUser, 
@@ -84,102 +80,109 @@ export default function ProfileShow({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`${profileUser.name}'s Profile`} />
 
-            {/* Added w-full to ensure it doesn't shrink when content is small */}
             <div className="mx-auto max-w-xl w-full pt-4 pb-8 px-4 sm:px-0">
                 
-                {/* PROFILE CARD */}
-                <div className="rounded-lg border bg-background p-6 shadow-sm mb-6 text-center relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-muted to-muted/50 -z-0" />
-                    
-                    <div className="relative z-10 pt-8">
-                        <div className="mx-auto h-24 w-24 rounded-full bg-primary border-[5px] border-background flex items-center justify-center text-3xl font-bold text-primary-foreground mb-3 shadow-sm">
-                            {profileUser.name.charAt(0).toUpperCase()}
+                {/* PROFILE */}
+                <div className="rounded-xl border bg-background shadow-sm mb-8 overflow-hidden">
+                    <div className="h-28" />
+                    <div className="px-6 pb-6">
+                        <div className="relative flex justify-center">
+                            <div className="absolute -top-12 h-24 w-24 rounded-full bg-primary border-[4px] border-background flex items-center justify-center text-3xl font-bold text-primary-foreground shadow-lg">
+                                {profileUser.name.charAt(0).toUpperCase()}
+                            </div>
                         </div>
                         
-                        <h1 className="text-2xl font-bold tracking-tight">{profileUser.name}</h1>
-                        <p className="text-sm text-muted-foreground mb-4">{profileUser.email}</p>
+                        <div className="pt-16 text-center">
+                            <h1 className="text-2xl font-bold tracking-tight text-foreground">{profileUser.name}</h1>
+                            <p className="text-sm text-muted-foreground mb-6">{profileUser.email}</p>
 
-                        {!isOwnProfile && (
-                            <button
-                                onClick={toggleFollow}
-                                disabled={isFollowLoading}
-                                onMouseEnter={() => setIsHoveringFollow(true)}
-                                onMouseLeave={() => setIsHoveringFollow(false)}
-                                className={`
-                                    inline-flex items-center justify-center gap-2 px-6 py-2 rounded-full font-semibold text-sm transition-all duration-200 shadow-sm min-w-[140px] cursor-pointer
-                                    ${isFollowing 
-                                        ? 'bg-background border border-border text-foreground hover:border-red-200 hover:text-red-600 hover:bg-red-50' 
-                                        : 'bg-primary text-primary-foreground hover:bg-primary/90'
-                                    }
-                                `}
-                            >
-                                {isFollowLoading ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : isFollowing ? (
-                                    isHoveringFollow ? (
-                                        <>
-                                            <UserMinus className="w-4 h-4" />
-                                            Unfollow
-                                        </>
+                            {!isOwnProfile && (
+                                <button
+                                    onClick={toggleFollow}
+                                    disabled={isFollowLoading}
+                                    onMouseEnter={() => setIsHoveringFollow(true)}
+                                    onMouseLeave={() => setIsHoveringFollow(false)}
+                                    className={`
+                                        inline-flex items-center justify-center gap-2 px-8 py-2.5 rounded-full font-semibold text-sm transition-all duration-200 shadow-sm min-w-[150px] mb-8 cursor-pointer
+                                        ${isFollowing 
+                                            ? 'bg-secondary text-secondary-foreground border border-transparent hover:border-red-200 hover:text-red-600 hover:bg-red-50' 
+                                            : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                                        }
+                                    `}
+                                >
+                                    {isFollowLoading ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : isFollowing ? (
+                                        isHoveringFollow ? <><UserMinus className="w-4 h-4" /> Unfollow</> : <><UserCheck className="w-4 h-4" /> Following</>
                                     ) : (
-                                        <>
-                                            <UserCheck className="w-4 h-4" />
-                                            Following
-                                        </>
-                                    )
-                                ) : (
-                                    <>
-                                        <UserPlus className="w-4 h-4" />
-                                        Follow
-                                    </>
-                                )}
-                            </button>
-                        )}
+                                        <><UserPlus className="w-4 h-4" /> Follow</>
+                                    )}
+                                </button>
+                            )}
 
-                        <div className="mt-6 flex justify-center gap-8 border-t pt-4">
-                            <div className="text-center">
-                                <span className="block font-bold text-xl">{allPosts.length}</span>
-                                <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Posts</span>
+                            <div className="grid grid-cols-3 gap-0 border-t border-b py-4 bg-muted/5 -mx-6">
+                                <div className="flex flex-col items-center justify-center border-r border-border/50">
+                                    <span className="text-xl font-bold text-foreground">{profileUser.posts_count ?? 0}</span>
+                                    <span className="text-[10px] uppercase tracking-[0.15em] font-bold text-muted-foreground">Posts</span>
+                                </div>
+                                <Link 
+                                    href={route('profile.followers', profileUser.id)} 
+                                    className="flex flex-col items-center justify-center border-r border-border/50 cursor-pointer"
+                                >
+                                    <span className="text-xl font-bold text-foreground">{profileUser.followers_count ?? 0}</span>
+                                    <span className="text-[10px] uppercase tracking-[0.15em] font-bold text-muted-foreground">Followers</span>
+                                </Link>
+                                <Link 
+                                    href={route('profile.following', profileUser.id)} 
+                                    className="flex flex-col items-center justify-center cursor-pointer"
+                                >
+                                    <span className="text-xl font-bold text-foreground">{profileUser.following_count ?? 0}</span>
+                                    <span className="text-[10px] uppercase tracking-[0.15em] font-bold text-muted-foreground">Following</span>
+                                </Link>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4 ml-1 flex items-center gap-2">
-                    Latest Posts
-                </h2>
+                <div className="flex items-center gap-2 mb-6 px-1">
+                    <Clock className="w-4 h-4 text-muted-foreground" />
+                    <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                        Recent Activity
+                    </h2>
+                </div>
                 
                 <div className="space-y-4">
                     {allPosts.length > 0 ? (
                         allPosts.map((post) => (
-                            <div key={post.id} className="rounded-lg border bg-background p-4 shadow-sm relative transition-all hover:shadow-md">
-                                <div className="mb-3 flex items-start justify-between">
+                            <div key={post.id} className="rounded-xl border bg-background p-5 shadow-sm relative transition-all hover:shadow-md">
+                                <div className="mb-4 flex items-start justify-between">
                                     <div className="flex items-center gap-3">
-                                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold shrink-0">
+                                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold shrink-0 border border-border/50">
                                             {post.user.name.charAt(0).toUpperCase()}
                                         </div>
                                         <div>
                                             <p className="text-sm font-semibold leading-none">{post.user.name}</p>
-                                            <p className="text-xs text-muted-foreground mt-1">{formatRelativeDate(post.created_at)}</p>
+                                            <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+                                                {formatRelativeDate(post.created_at)}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
                                 <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground/90">{post.content}</p>
                                 {post.image_url && (
-                                    <div className="mt-3 rounded-md overflow-hidden border bg-muted/20">
-                                        <img src={`/storage/${post.image_url}`} className="w-full object-cover max-h-96" alt="Post" />
+                                    <div className="mt-4 rounded-lg overflow-hidden border bg-muted/20">
+                                        <img src={`/storage/${post.image_url}`} className="w-full object-cover max-h-96" alt="Post content" />
                                     </div>
                                 )}
                             </div>
                         ))
                     ) : (
-                        /* IMPROVED EMPTY STATE */
-                        <div className="rounded-lg border border-dashed bg-muted/30 p-12 text-center flex flex-col items-center justify-center min-h-[300px]">
-                            <div className="bg-muted p-4 rounded-full mb-4">
-                                <FileText className="w-8 h-8 text-muted-foreground" />
+                        <div className="rounded-xl border border-dashed bg-muted/20 p-12 text-center flex flex-col items-center justify-center min-h-[300px]">
+                            <div className="bg-background p-4 rounded-full mb-4 shadow-sm border border-border/50">
+                                <FileText className="w-8 h-8 text-muted-foreground/60" />
                             </div>
                             <h3 className="text-lg font-medium text-foreground">No posts yet</h3>
-                            <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+                            <p className="text-sm text-muted-foreground mt-2 max-w-xs leading-relaxed">
                                 {profileUser.name} hasn't shared anything with the community yet.
                             </p>
                         </div>

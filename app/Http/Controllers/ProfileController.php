@@ -6,12 +6,15 @@ use App\Models\User;
 use App\Models\Post;
 use App\Models\Follow;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class ProfileController extends Controller
 {
     public function show(Request $request, User $user)
     {
+        $user->loadCount(['followers', 'following', 'posts']);
+
         $isFollowing = $request->user() 
             ? $request->user()->isFollowing($user) 
             : false;
@@ -52,5 +55,35 @@ class ProfileController extends Controller
             ]);
             return back()->with('success', 'User followed.');
         }
+    }
+
+public function followers(Request $request, User $user)
+    {
+        $users = $user->followers()
+            ->withExists(['followers as is_following' => function ($query) {
+                $query->where('follower_id', Auth::id());
+            }])
+            ->paginate(15);
+
+        return Inertia::render('profile/UserList', [
+            'profileUser' => $user,
+            'title' => 'Followers',
+            'users' => $users,
+        ]);
+    }
+
+    public function following(Request $request, User $user)
+    {
+        $users = $user->following()
+            ->withExists(['followers as is_following' => function ($query) {
+                $query->where('follower_id', Auth::id());
+            }])
+            ->paginate(15);
+
+        return Inertia::render('profile/UserList', [
+            'profileUser' => $user,
+            'title' => 'Following',
+            'users' => $users,
+        ]);
     }
 }

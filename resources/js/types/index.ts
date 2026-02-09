@@ -16,6 +16,9 @@ export interface User {
     name: string;
     email: string;
     email_verified_at?: string;
+    followers_count?: number; 
+    following_count?: number;
+    posts_count?: number;
 }
 
 export interface Comment {

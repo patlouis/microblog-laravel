@@ -27,6 +27,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Profile
     Route::get('/profile/{user}', [ProfileController::class, 'show'])->name('profile.show');
     Route::post('/profile/{user}/follow', [ProfileController::class, 'follow'])->name('profile.follow');
+    Route::get('/profile/{user}/followers', [ProfileController::class, 'followers'])->name('profile.followers');
+    Route::get('/profile/{user}/following', [ProfileController::class, 'following'])->name('profile.following');
 });
 
 require __DIR__.'/settings.php';
