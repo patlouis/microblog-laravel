@@ -164,8 +164,10 @@ export default function PostCard({ post: initialPost, onCommentClick, onDelete }
                 )}
             </div>
 
-            <p className="mb-3 text-[15px] leading-relaxed whitespace-pre-wrap">{displayPost.content}</p>
-
+            <p className="mb-3 text-[15px] leading-relaxed whitespace-pre-wrap break-words overflow-hidden">
+                {displayPost.content}
+            </p>
+            
             {displayPost.image_url && (
                 <div className="mt-3 overflow-hidden rounded-md border bg-muted/20">
                     <img 
