@@ -27,16 +27,7 @@ class ProfileController extends Controller
             'profileUser' => $user,
             'isFollowing' => $isFollowing,
             'posts' => Post::where('user_id', $user->id)
-                ->with(['user', 'comments.user'])
-                ->withCount(['comments', 'likes', 'shares']) 
-                ->withExists([
-                    'likes as liked' => function ($q) {
-                        $q->where('user_id', Auth::id());
-                    },
-                    'shares as shared' => function ($q) {
-                        $q->where('user_id', Auth::id()); 
-                    }
-                ])
+                ->withMetadata()
                 ->latest()
                 ->paginate(5)
         ]);

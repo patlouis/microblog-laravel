@@ -22,9 +22,6 @@ class Post extends Model
         'deleted_at' => 'datetime',
     ];
 
-    /**
-     * The author of the post.
-     */
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -49,6 +46,22 @@ class Post extends Model
     public function shares()
     {
         return $this->hasMany(Share::class);
+    }
+
+    public function scopeWithMetadata($query)
+    {
+        return $query->with(['user', 'comments.user'])
+            ->withCount(['comments', 'likes', 'shares'])
+            ->withExists([
+                'likes as liked' => fn($q) => $q->where('user_id', auth()->id()),
+                'shares as shared' => fn($q) => $q->where('user_id', auth()->id())
+            ]);
+    }
+
+    public function scopeFeedFor($query, $user)
+    {
+        $userIds = $user->following()->pluck('users.id')->push($user->id);
+        return $query->whereIn('user_id', $userIds);
     }
 
     protected static function booted()
