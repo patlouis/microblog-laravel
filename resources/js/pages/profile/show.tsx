@@ -1,11 +1,12 @@
 import { Head, router, usePage, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { useState, useEffect, useCallback } from 'react';
-import { BreadcrumbItem, User, Post, PaginatedPosts, Comment } from '@/types';
+import { useState, useEffect } from 'react';
+import { BreadcrumbItem, User, Post, PaginatedPosts } from '@/types';
 import { route } from 'ziggy-js';
-import { UserPlus, UserCheck, Loader2, UserMinus, FileText, Clock, Repeat2 } from 'lucide-react';
+import { UserPlus, UserCheck, Loader2, UserMinus, FileText, Clock } from 'lucide-react';
 import PostCard from '@/components/post-card';
 import CommentModal from '@/components/comment-modal';
+import { usePostFeed } from '@/hooks/use-post-feed';
 
 export default function ProfileShow({ 
     profileUser, 
@@ -18,9 +19,15 @@ export default function ProfileShow({
 }) {
     const { auth } = usePage().props as any;
     
-    const [allPosts, setAllPosts] = useState<Post[]>(initialPosts.data);
-    const [nextPageUrl, setNextPageUrl] = useState<string | null>(initialPosts.next_page_url);
-    const [isLoading, setIsLoading] = useState(false);
+    const { 
+        posts: allPosts, 
+        isLoading, 
+        nextPageUrl,
+        handlePostDelete, 
+        handleCommentAdded, 
+        handleCommentUpdated, 
+        handleCommentDeleted 
+    } = usePostFeed(initialPosts);
     
     const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
     const [isFollowLoading, setIsFollowLoading] = useState(false);
@@ -29,88 +36,6 @@ export default function ProfileShow({
     const [selectedPost, setSelectedPost] = useState<Post | null>(null);
 
     const isOwnProfile = auth.user.id === profileUser.id;
-
-    useEffect(() => {
-        const handleScroll = () => {
-            const scrollHeight = document.documentElement.scrollHeight;
-            const currentPosition = window.innerHeight + window.scrollY;
-            
-            if (currentPosition >= scrollHeight - 400 && nextPageUrl && !isLoading) {
-                loadMorePosts();
-            }
-        };
-
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, [nextPageUrl, isLoading]);
-
-    const loadMorePosts = () => {
-        if (!nextPageUrl || isLoading) return;
-        setIsLoading(true);
-
-        router.get(nextPageUrl, {}, {
-            preserveState: true,
-            preserveScroll: true,
-            only: ['posts'],
-            onSuccess: (page) => {
-                const incoming = page.props.posts as PaginatedPosts;
-                setAllPosts((prev) => [...prev, ...incoming.data]);
-                setNextPageUrl(incoming.next_page_url);
-                setIsLoading(false);
-                
-                window.history.replaceState({}, '', route('profile.show', { user: profileUser.id }));
-            },
-            onError: () => setIsLoading(false),
-        });
-    };
-
-    const updatePostInState = useCallback((postId: number, updateFn: (content: any) => any) => {
-        setAllPosts((currentPosts) =>
-            currentPosts.map((p) => {
-                const content = p.post || p;
-                if (content.id === postId) {
-                    const updatedContent = updateFn(content);
-                    return p.post ? { ...p, post: updatedContent } : updatedContent;
-                }
-                return p;
-            })
-        );
-    }, []);
-
-    const handlePostDelete = (deletedPostId: number) => {
-        setAllPosts((currentPosts) => currentPosts.filter(p => {
-            const id = p.post?.id || p.id;
-            return id !== deletedPostId;
-        }));
-        if (selectedPost?.id === deletedPostId) {
-            setSelectedPost(null);
-        }
-    };
-
-    const handleCommentAdded = (postId: number, newComment: Comment) => {
-        updatePostInState(postId, (content) => ({
-            ...content,
-            comments_count: (content.comments_count || 0) + 1,
-            comments: [...(content.comments || []), newComment],
-        }));
-    };
-
-    const handleCommentUpdated = (postId: number, updatedComment: Comment) => {
-        updatePostInState(postId, (content) => ({
-            ...content,
-            comments: (content.comments || []).map((c: Comment) => 
-                c.id === updatedComment.id ? updatedComment : c
-            ),
-        }));
-    };
-
-    const handleCommentDeleted = (postId: number, commentId: number) => {
-        updatePostInState(postId, (content) => ({
-            ...content,
-            comments_count: Math.max(0, (content.comments_count || 1) - 1),
-            comments: (content.comments || []).filter((c: Comment) => c.id !== commentId),
-        }));
-    };
 
     const toggleFollow = () => {
         if (isFollowLoading) return;
@@ -128,6 +53,7 @@ export default function ProfileShow({
         });
     };
     
+    // Keep selectedPost in sync if the feed updates (e.g., a comment is added via the hook)
     useEffect(() => {
         if (selectedPost) {
             const updatedWrapper = allPosts.find(p => (p.post?.id === selectedPost.id) || (p.id === selectedPost.id));

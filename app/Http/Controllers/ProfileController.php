@@ -14,18 +14,14 @@ class ProfileController extends Controller
     public function show(Request $request, User $user)
     {
         $user->loadCount(['followers', 'following', 'posts', 'shares']);
-
-        $isFollowing = $request->user() 
-            ? $request->user()->isFollowing($user) 
-            : false;
-
+        $isFollowing = $request->user()->isFollowing($user);
         $posts = Post::where('user_id', $user->id)
             ->orWhereHas('shares', function ($query) use ($user) {
                 $query->where('user_id', $user->id);
             })
             ->withMetadata()
             ->latest()
-            ->paginate(10);
+            ->paginate(5);
 
         return Inertia::render('profile/show', [
             'profileUser' => $user,

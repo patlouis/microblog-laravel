@@ -1,11 +1,12 @@
-import { Head, router, Link, usePage } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { route } from 'ziggy-js';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { FileText, Loader2 } from 'lucide-react';
-import type { Post, PaginatedPosts, BreadcrumbItem, Comment } from '@/types';
+import type { Post, PaginatedPosts, BreadcrumbItem } from '@/types';
 import PostCard from '@/components/post-card';
 import CommentModal from '@/components/comment-modal';
+import { usePostFeed } from '@/hooks/use-post-feed';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -17,88 +18,17 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPosts }) {
     const { auth } = usePage().props as any;
 
-    const [allPosts, setAllPosts] = useState<Post[]>(initialPosts.data);
-    const [nextPageUrl, setNextPageUrl] = useState<string | null>(initialPosts.next_page_url);
-    const [isLoading, setIsLoading] = useState(false);
+    const { 
+        posts: allPosts, 
+        isLoading, 
+        nextPageUrl,
+        handlePostDelete, 
+        handleCommentAdded, 
+        handleCommentUpdated, 
+        handleCommentDeleted 
+    } = usePostFeed(initialPosts);
+
     const [selectedPost, setSelectedPost] = useState<Post | null>(null);
-
-    useEffect(() => {
-        const handleScroll = () => {
-            const scrollHeight = document.documentElement.scrollHeight;
-            const currentPosition = window.innerHeight + window.scrollY;
-            if (currentPosition >= scrollHeight - 400 && nextPageUrl && !isLoading) {
-                loadMorePosts();
-            }
-        };
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, [nextPageUrl, isLoading]);
-
-    const loadMorePosts = () => {
-        if (!nextPageUrl || isLoading) return;
-        setIsLoading(true);
-
-        router.get(nextPageUrl, {}, {
-            preserveState: true,
-            preserveScroll: true,
-            only: ['posts'],
-            onSuccess: (page) => {
-                const incoming = page.props.posts as PaginatedPosts;
-                setAllPosts((prev) => [...prev, ...incoming.data]);
-                setNextPageUrl(incoming.next_page_url);
-                setIsLoading(false);
-                window.history.replaceState({}, '', route('dashboard'));
-            },
-            onError: () => setIsLoading(false),
-        });
-    };
-
-    const updatePostInState = useCallback((postId: number, updateFn: (content: any) => any) => {
-        setAllPosts((currentPosts) =>
-            currentPosts.map((p) => {
-                const content = p.post || p;
-                if (content.id === postId) {
-                    const updatedContent = updateFn(content);
-                    return p.post ? { ...p, post: updatedContent } : updatedContent;
-                }
-                return p;
-            })
-        );
-    }, []);
-
-    const handlePostDelete = (deletedPostId: number) => {
-        setAllPosts((currentPosts) => currentPosts.filter(p => {
-            const id = p.post?.id || p.id;
-            return id !== deletedPostId;
-        }));
-        if (selectedPost?.id === deletedPostId) setSelectedPost(null);
-    };
-
-    const handleCommentAdded = (postId: number, newComment: Comment) => {
-        updatePostInState(postId, (content) => ({
-            ...content,
-            comments_count: (content.comments_count || 0) + 1,
-            // FIXED: Spread existing comments FIRST, then add new one at the end
-            comments: [...(content.comments || []), newComment], 
-        }));
-    };
-
-    const handleCommentUpdated = (postId: number, updatedComment: Comment) => {
-        updatePostInState(postId, (content) => ({
-            ...content,
-            comments: (content.comments || []).map((c: Comment) => 
-                c.id === updatedComment.id ? updatedComment : c
-            ),
-        }));
-    };
-
-    const handleCommentDeleted = (postId: number, commentId: number) => {
-        updatePostInState(postId, (content) => ({
-            ...content,
-            comments_count: Math.max(0, (content.comments_count || 1) - 1),
-            comments: (content.comments || []).filter((c: Comment) => c.id !== commentId),
-        }));
-    };
 
     useEffect(() => {
         if (selectedPost) {
@@ -106,7 +36,7 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPos
             if (updatedWrapper) {
                  const content = updatedWrapper.post || updatedWrapper;
                  if (JSON.stringify(content) !== JSON.stringify(selectedPost)) {
-                    setSelectedPost(content);
+                     setSelectedPost(content);
                  }
             }
         }
