@@ -1,46 +1,133 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, usePage, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { route } from 'ziggy-js';
 import { useState, useEffect } from 'react';
 import { FileText, Loader2 } from 'lucide-react';
-import type { Post, PaginatedPosts, BreadcrumbItem } from '@/types';
+import type { Post, BreadcrumbItem, Comment } from '@/types';
 import PostCard from '@/components/post-card';
+import ShareCard from '@/components/share-card';
 import CommentModal from '@/components/comment-modal';
-import { usePostFeed } from '@/hooks/use-post-feed';
+
+// Define the mixed feed structure
+interface FeedItem {
+    type: 'post' | 'share';
+    sort_date: string;
+    data: any;
+}
+
+interface PaginatedFeed {
+    data: FeedItem[];
+    next_page_url: string | null;
+    current_page: number;
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Home',
-        href: route('dashboard'),
-    },
+    { title: 'Home', href: route('dashboard') },
 ];
 
-export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPosts }) {
+export default function Dashboard({ posts: initialPosts }: { posts: PaginatedFeed }) {
     const { auth } = usePage().props as any;
 
-    const { 
-        posts: allPosts, 
-        isLoading, 
-        nextPageUrl,
-        handlePostDelete, 
-        handleCommentAdded, 
-        handleCommentUpdated, 
-        handleCommentDeleted 
-    } = usePostFeed(initialPosts);
-
+    // Local state for the mixed feed
+    const [feedItems, setFeedItems] = useState<FeedItem[]>(initialPosts.data || []);
+    const [nextPageUrl, setNextPageUrl] = useState<string | null>(initialPosts.next_page_url);
+    const [isLoading, setIsLoading] = useState(false);
     const [selectedPost, setSelectedPost] = useState<Post | null>(null);
 
+    // --- Infinite Scroll ---
+    useEffect(() => {
+        const handleScroll = () => {
+            const scrollHeight = document.documentElement.scrollHeight;
+            const currentPosition = window.innerHeight + window.scrollY;
+            if (currentPosition >= scrollHeight - 400 && nextPageUrl && !isLoading) {
+                loadMorePosts();
+            }
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [nextPageUrl, isLoading]);
+
+    const loadMorePosts = () => {
+        if (!nextPageUrl || isLoading) return;
+        setIsLoading(true);
+
+        router.get(nextPageUrl, {}, {
+            preserveState: true,
+            preserveScroll: true,
+            only: ['posts'],
+            onSuccess: (page) => {
+                const incoming = page.props.posts as any;
+                
+                let newItems = [];
+                if (incoming && Array.isArray(incoming.data)) {
+                    newItems = incoming.data;
+                }
+
+                setFeedItems((prev) => [...prev, ...newItems]);
+                setNextPageUrl(incoming.next_page_url || null);
+                setIsLoading(false);
+            },
+            onError: () => setIsLoading(false),
+        });
+    };
+
+    // --- Sync Logic ---
+    const handleSync = (updatedPost: Post) => {
+        setFeedItems((currentItems) => 
+            currentItems.map((item) => {
+                if (item.type === 'post' && item.data.id === updatedPost.id) {
+                    return { ...item, data: updatedPost };
+                }
+                if (item.type === 'share' && item.data.post.id === updatedPost.id) {
+                    return { ...item, data: { ...item.data, post: updatedPost } };
+                }
+                return item;
+            })
+        );
+    };
+
+    const handlePostDelete = (id: number) => {
+        setFeedItems(prev => prev.filter(item => {
+             if (item.type === 'post') return item.data.id !== id;
+             if (item.type === 'share') return item.data.post.id !== id;
+             return true;
+        }));
+        if (selectedPost?.id === id) setSelectedPost(null);
+    };
+
+    const handleCommentAdded = (postId: number, newComment: Comment) => {
+         const targetItem = feedItems.find(i => 
+             (i.type === 'post' && i.data.id === postId) || 
+             (i.type === 'share' && i.data.post.id === postId)
+         );
+
+         if (targetItem) {
+            const currentPost = targetItem.type === 'post' ? targetItem.data : targetItem.data.post;
+            const updatedPost = {
+                ...currentPost,
+                comments_count: (currentPost.comments_count || 0) + 1,
+                comments: [...(currentPost.comments || []), newComment]
+            };
+            handleSync(updatedPost);
+         }
+    };
+
+    // Keep modal synced
     useEffect(() => {
         if (selectedPost) {
-            const updatedWrapper = allPosts.find(p => (p.post?.id === selectedPost.id) || (p.id === selectedPost.id));
-            if (updatedWrapper) {
-                 const content = updatedWrapper.post || updatedWrapper;
+            const foundItem = feedItems.find(i => 
+                (i.type === 'post' && i.data.id === selectedPost.id) || 
+                (i.type === 'share' && i.data.post.id === selectedPost.id)
+            );
+            
+            if (foundItem) {
+                 const content = foundItem.type === 'post' ? foundItem.data : foundItem.data.post;
                  if (JSON.stringify(content) !== JSON.stringify(selectedPost)) {
                      setSelectedPost(content);
                  }
             }
         }
-    }, [allPosts, selectedPost]);
+    }, [feedItems, selectedPost]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -62,24 +149,42 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPos
                 </div>
 
                 <div className="w-full space-y-4">
-                    {allPosts.map((post) => (
-                        <PostCard 
-                            key={post.id} 
-                            post={post} 
-                            onCommentClick={(targetPost) => setSelectedPost(targetPost)} 
-                            onDelete={handlePostDelete}
-                        />
-                    ))}
+                    {feedItems.map((item) => {
+                        const uniqueKey = `${item.type}-${item.data.id}`;
+                        
+                        if (item.type === 'share') {
+                            return (
+                                <ShareCard 
+                                    key={uniqueKey}
+                                    share={item.data}
+                                    onCommentClick={(p) => setSelectedPost(p)}
+                                    onDelete={handlePostDelete}
+                                    onSync={handleSync}
+                                />
+                            );
+                        } else {
+                            return (
+                                <PostCard 
+                                    key={uniqueKey}
+                                    post={item.data}
+                                    onCommentClick={(p) => setSelectedPost(p)}
+                                    onDelete={handlePostDelete}
+                                    onSync={handleSync}
+                                />
+                            );
+                        }
+                    })}
                 </div>
 
-                <div className={`${allPosts.length > 0 ? 'py-8' : 'pt-0'} w-full flex justify-center`}>
+                {/* Loading / Empty States */}
+                <div className="py-8 w-full flex justify-center">
                     {isLoading ? (
                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
                     ) : (
                         nextPageUrl ? (
                             <span className="opacity-0">Scroll for more</span> 
                         ) : (
-                            allPosts.length > 0 ? (
+                            feedItems.length > 0 ? (
                                 <span className="text-xs text-muted-foreground font-medium">
                                     You've reached the end of the feed
                                 </span>
@@ -104,8 +209,6 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedPos
                     post={selectedPost}
                     onClose={() => setSelectedPost(null)}
                     onCommentAdded={handleCommentAdded}
-                    onCommentUpdated={handleCommentUpdated}
-                    onCommentDeleted={handleCommentDeleted}
                 />
             )}
         </AppLayout>

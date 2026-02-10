@@ -91,7 +91,7 @@ export default function ProfileShow({
                         
                         <div className="pt-16 text-center">
                             <h1 className="text-2xl font-black tracking-tight text-foreground leading-tight">{profileUser.name}</h1>
-                            <p className="text-sm text-muted-foreground mb-6">@{profileUser.email.split('@')[0]}</p>
+                            <p className="text-sm text-muted-foreground mb-6">{profileUser.email}</p>
 
                             {!isOwnProfile && (
                                 <button
