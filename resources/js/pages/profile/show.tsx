@@ -5,6 +5,7 @@ import { BreadcrumbItem, User, Post, PaginatedPosts } from '@/types';
 import { route } from 'ziggy-js';
 import { UserPlus, UserCheck, Loader2, UserMinus, FileText, Clock } from 'lucide-react';
 import PostCard from '@/components/post-card';
+import ShareCard from '@/components/share-card'; 
 import CommentModal from '@/components/comment-modal';
 import { usePostFeed } from '@/hooks/use-post-feed';
 
@@ -53,7 +54,6 @@ export default function ProfileShow({
         });
     };
     
-    // Keep selectedPost in sync if the feed updates (e.g., a comment is added via the hook)
     useEffect(() => {
         if (selectedPost) {
             const updatedWrapper = allPosts.find(p => (p.post?.id === selectedPost.id) || (p.id === selectedPost.id));
@@ -160,14 +160,29 @@ export default function ProfileShow({
                 </div>
                 
                 <div className="space-y-4">
-                    {allPosts.map((post) => (
-                        <PostCard 
-                            key={post.id} 
-                            post={post} 
-                            onCommentClick={(targetPost) => setSelectedPost(targetPost)} 
-                            onDelete={handlePostDelete}
-                        />
-                    ))}
+                    {allPosts.map((item: any) => {
+                        const key = `${item.type}-${item.id}`;
+                        
+                        if (item.type === 'share') {
+                            return (
+                                <ShareCard 
+                                    key={key}
+                                    share={item}
+                                    onCommentClick={(targetPost) => setSelectedPost(targetPost)}
+                                    onDelete={handlePostDelete}
+                                />
+                            );
+                        }
+                        
+                        return (
+                            <PostCard 
+                                key={key} 
+                                post={item} 
+                                onCommentClick={(targetPost) => setSelectedPost(targetPost)} 
+                                onDelete={handlePostDelete}
+                            />
+                        );
+                    })}
                 </div>
 
                 <div className="py-12 flex justify-center">
@@ -184,9 +199,9 @@ export default function ProfileShow({
                                     <div className="bg-background p-4 rounded-full mb-4 shadow-sm border border-border/50">
                                         <FileText className="w-8 h-8 text-muted-foreground/60" />
                                     </div>
-                                    <h3 className="text-lg font-medium text-foreground">No posts yet</h3>
+                                    <h3 className="text-lg font-medium text-foreground">No activity yet</h3>
                                     <p className="text-sm text-muted-foreground mt-1">
-                                        This user hasn't shared any content yet.
+                                        This user hasn't posted or shared anything yet.
                                     </p>
                                 </div>
                             )

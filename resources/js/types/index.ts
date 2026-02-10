@@ -34,6 +34,7 @@ export interface Post {
     content: string;
     image_url?: string;
     created_at: string;
+    updated_at: string;
     user: User;
     
     likes_count: number;
@@ -45,6 +46,13 @@ export interface Post {
     shares_count: number;
     
     post?: Post; 
+}
+
+export interface Share {
+    id: number;
+    updated_at: string; 
+    user: User;         
+    post: Post;        
 }
 
 export interface PaginatedPosts {

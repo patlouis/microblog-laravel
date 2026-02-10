@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Post;
+use App\Models\Share;
 use App\Models\Follow;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB; 
 use Inertia\Inertia;
 
 class ProfileController extends Controller
@@ -14,19 +16,44 @@ class ProfileController extends Controller
     public function show(Request $request, User $user)
     {
         $user->loadCount(['followers', 'following', 'posts', 'shares']);
-        $isFollowing = $request->user()->isFollowing($user);
-        $posts = Post::where('user_id', $user->id)
-            ->orWhereHas('shares', function ($query) use ($user) {
-                $query->where('user_id', $user->id);
-            })
-            ->withMetadata()
-            ->latest()
+
+        $isFollowing = $request->user()?->isFollowing($user);
+
+        $postsQuery = DB::table('posts')
+            ->select('id', DB::raw("'post' as type"), 'created_at as sort_date')
+            ->where('user_id', $user->id)
+            ->whereNull('deleted_at');
+
+        $sharesQuery = DB::table('shares')
+            ->select('id', DB::raw("'share' as type"), 'updated_at as sort_date')
+            ->where('user_id', $user->id);
+
+        $feedIds = $postsQuery->union($sharesQuery)
+            ->orderByDesc('sort_date')
             ->paginate(5);
+
+        $feedItems = $feedIds->getCollection()->map(function ($item) {
+            if ($item->type === 'post') {
+                $post = Post::with(['user'])->withMetadata()->find($item->id);
+                if ($post) $post->type = 'post';
+                return $post;
+            } else {
+                $share = Share::with([
+                    'post' => fn($q) => $q->withMetadata()->with('user'),
+                    'user'
+                ])->find($item->id);
+                
+                if ($share) $share->type = 'share';
+                return $share;
+            }
+        })->filter()->values();
+
+        $feedIds->setCollection($feedItems);
 
         return Inertia::render('profile/show', [
             'profileUser' => $user,
             'isFollowing' => $isFollowing,
-            'posts' => $posts
+            'posts' => $feedIds
         ]);
     }
 
@@ -58,7 +85,7 @@ class ProfileController extends Controller
         }
     }
 
-public function followers(Request $request, User $user)
+    public function followers(Request $request, User $user)
     {
         $users = $user->followers()
             ->withExists(['followers as is_following' => function ($query) {
