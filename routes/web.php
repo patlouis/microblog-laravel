@@ -28,9 +28,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
     // Profile
     Route::get('/profile/{user}', [ProfileController::class, 'show'])->name('profile.show');
-    Route::post('/profile/{user}/follow', [ProfileController::class, 'follow'])->name('profile.follow');
     Route::get('/profile/{user}/followers', [ProfileController::class, 'followers'])->name('profile.followers');
     Route::get('/profile/{user}/following', [ProfileController::class, 'following'])->name('profile.following');
+    Route::post('/profile/{user}/follow', [ProfileController::class, 'follow'])->name('profile.follow');
 });
 
 require __DIR__.'/settings.php';
