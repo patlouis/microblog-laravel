@@ -19,6 +19,7 @@ export interface User {
     followers_count?: number; 
     following_count?: number;
     posts_count?: number;
+    shares_count?: number
 }
 
 export interface Comment {
