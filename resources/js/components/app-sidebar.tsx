@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react'; 
-import { CircleUser, Home, CirclePlus } from 'lucide-react'; 
+import { CircleUser, Home, SquarePlus } from 'lucide-react'; 
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -33,7 +33,7 @@ export function AppSidebar() {
         {
             title: 'Create Post',
             href: route('posts.create'),
-            icon: CirclePlus,
+            icon: SquarePlus,
         },
     ];
 

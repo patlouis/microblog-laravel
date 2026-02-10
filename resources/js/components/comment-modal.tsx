@@ -62,8 +62,6 @@ export default function CommentModal({
         submit(route('comments.store', post.id), {
             preserveScroll: true,
             onSuccess: () => {
-                setLocalComments((prev) => [...prev, newComment]);
-                if (onCommentAdded) onCommentAdded(post.id, newComment);
                 reset();
                 setTimeout(() => {
                     scrollEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });

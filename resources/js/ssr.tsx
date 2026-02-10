@@ -5,15 +5,7 @@ import { createRoot } from 'react-dom/client';
 import '../css/app.css';
 import { initializeTheme } from './hooks/use-appearance';
 
-// 👉 Ziggy
-import { route } from 'ziggy-js';
-import { Ziggy } from './ziggy';
-
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
-
-// Make Ziggy global
-window.Ziggy = Ziggy;
-window.route = route;
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),

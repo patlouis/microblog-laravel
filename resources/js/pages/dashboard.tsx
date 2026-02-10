@@ -1,14 +1,14 @@
-import { Head, Link, usePage, router } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { route } from 'ziggy-js';
 import { useState, useEffect } from 'react';
 import { FileText, Loader2 } from 'lucide-react';
-import type { Post, BreadcrumbItem, Comment } from '@/types';
+import type { Post, BreadcrumbItem } from '@/types';
 import PostCard from '@/components/post-card';
 import ShareCard from '@/components/share-card';
 import CommentModal from '@/components/comment-modal';
+import { usePostFeed } from '@/hooks/use-post-feed';
 
-// Define the mixed feed structure
 interface FeedItem {
     type: 'post' | 'share';
     sort_date: string;
@@ -28,94 +28,23 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function Dashboard({ posts: initialPosts }: { posts: PaginatedFeed }) {
     const { auth } = usePage().props as any;
 
-    // Local state for the mixed feed
-    const [feedItems, setFeedItems] = useState<FeedItem[]>(initialPosts.data || []);
-    const [nextPageUrl, setNextPageUrl] = useState<string | null>(initialPosts.next_page_url);
-    const [isLoading, setIsLoading] = useState(false);
+    const { 
+        posts: feedItems, 
+        isLoading, 
+        nextPageUrl,
+        handlePostUpdate,
+        handlePostDelete, 
+        handleCommentAdded,
+        handleCommentUpdated,
+        handleCommentDeleted
+    } = usePostFeed<FeedItem>(initialPosts as any);
+
     const [selectedPost, setSelectedPost] = useState<Post | null>(null);
 
-    // --- Infinite Scroll ---
-    useEffect(() => {
-        const handleScroll = () => {
-            const scrollHeight = document.documentElement.scrollHeight;
-            const currentPosition = window.innerHeight + window.scrollY;
-            if (currentPosition >= scrollHeight - 400 && nextPageUrl && !isLoading) {
-                loadMorePosts();
-            }
-        };
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, [nextPageUrl, isLoading]);
-
-    const loadMorePosts = () => {
-        if (!nextPageUrl || isLoading) return;
-        setIsLoading(true);
-
-        router.get(nextPageUrl, {}, {
-            preserveState: true,
-            preserveScroll: true,
-            only: ['posts'],
-            onSuccess: (page) => {
-                const incoming = page.props.posts as any;
-                
-                let newItems = [];
-                if (incoming && Array.isArray(incoming.data)) {
-                    newItems = incoming.data;
-                }
-
-                setFeedItems((prev) => [...prev, ...newItems]);
-                setNextPageUrl(incoming.next_page_url || null);
-                setIsLoading(false);
-            },
-            onError: () => setIsLoading(false),
-        });
-    };
-
-    // --- Sync Logic ---
-    const handleSync = (updatedPost: Post) => {
-        setFeedItems((currentItems) => 
-            currentItems.map((item) => {
-                if (item.type === 'post' && item.data.id === updatedPost.id) {
-                    return { ...item, data: updatedPost };
-                }
-                if (item.type === 'share' && item.data.post.id === updatedPost.id) {
-                    return { ...item, data: { ...item.data, post: updatedPost } };
-                }
-                return item;
-            })
-        );
-    };
-
-    const handlePostDelete = (id: number) => {
-        setFeedItems(prev => prev.filter(item => {
-             if (item.type === 'post') return item.data.id !== id;
-             if (item.type === 'share') return item.data.post.id !== id;
-             return true;
-        }));
-        if (selectedPost?.id === id) setSelectedPost(null);
-    };
-
-    const handleCommentAdded = (postId: number, newComment: Comment) => {
-         const targetItem = feedItems.find(i => 
-             (i.type === 'post' && i.data.id === postId) || 
-             (i.type === 'share' && i.data.post.id === postId)
-         );
-
-         if (targetItem) {
-            const currentPost = targetItem.type === 'post' ? targetItem.data : targetItem.data.post;
-            const updatedPost = {
-                ...currentPost,
-                comments_count: (currentPost.comments_count || 0) + 1,
-                comments: [...(currentPost.comments || []), newComment]
-            };
-            handleSync(updatedPost);
-         }
-    };
-
-    // Keep modal synced
+    // Keep Modal Synced
     useEffect(() => {
         if (selectedPost) {
-            const foundItem = feedItems.find(i => 
+            const foundItem = (feedItems as unknown as FeedItem[]).find(i => 
                 (i.type === 'post' && i.data.id === selectedPost.id) || 
                 (i.type === 'share' && i.data.post.id === selectedPost.id)
             );
@@ -149,9 +78,8 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedFee
                 </div>
 
                 <div className="w-full space-y-4">
-                    {feedItems.map((item) => {
+                    {(feedItems as unknown as FeedItem[]).map((item) => {
                         const uniqueKey = `${item.type}-${item.data.id}`;
-                        
                         if (item.type === 'share') {
                             return (
                                 <ShareCard 
@@ -159,7 +87,7 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedFee
                                     share={item.data}
                                     onCommentClick={(p) => setSelectedPost(p)}
                                     onDelete={handlePostDelete}
-                                    onSync={handleSync}
+                                    onSync={handlePostUpdate} // Connected
                                 />
                             );
                         } else {
@@ -169,15 +97,14 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedFee
                                     post={item.data}
                                     onCommentClick={(p) => setSelectedPost(p)}
                                     onDelete={handlePostDelete}
-                                    onSync={handleSync}
+                                    onSync={handlePostUpdate}
                                 />
                             );
                         }
                     })}
                 </div>
 
-                {/* Loading / Empty States */}
-                <div className="py-8 w-full flex justify-center">
+                <div className="w-full flex justify-center">
                     {isLoading ? (
                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
                     ) : (
@@ -185,7 +112,7 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedFee
                             <span className="opacity-0">Scroll for more</span> 
                         ) : (
                             feedItems.length > 0 ? (
-                                <span className="text-xs text-muted-foreground font-medium">
+                                <span className=" py-8 text-xs text-muted-foreground font-medium">
                                     You've reached the end of the feed
                                 </span>
                             ) : (
@@ -209,6 +136,8 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedFee
                     post={selectedPost}
                     onClose={() => setSelectedPost(null)}
                     onCommentAdded={handleCommentAdded}
+                    onCommentUpdated={handleCommentUpdated}
+                    onCommentDeleted={handleCommentDeleted}
                 />
             )}
         </AppLayout>

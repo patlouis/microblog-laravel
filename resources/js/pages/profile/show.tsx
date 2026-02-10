@@ -24,6 +24,7 @@ export default function ProfileShow({
         posts: allPosts, 
         isLoading, 
         nextPageUrl,
+        handlePostUpdate,
         handlePostDelete, 
         handleCommentAdded, 
         handleCommentUpdated, 
@@ -40,7 +41,6 @@ export default function ProfileShow({
 
     const toggleFollow = () => {
         if (isFollowLoading) return;
-        
         const newStatus = !isFollowing;
         setIsFollowing(newStatus);
         setIsFollowLoading(true);
@@ -48,29 +48,49 @@ export default function ProfileShow({
         router.post(route('profile.follow', profileUser.id), {}, {
             preserveScroll: true,
             onFinish: () => setIsFollowLoading(false),
-            onError: () => {
-                setIsFollowing(!newStatus);
-            }
+            onError: () => setIsFollowing(!newStatus)
         });
     };
     
+    // --- FIX IS HERE ---
     useEffect(() => {
         if (selectedPost) {
-            const updatedWrapper = allPosts.find(p => (p.post?.id === selectedPost.id) || (p.id === selectedPost.id));
+            // Safe find logic
+            const updatedWrapper = allPosts.find((p: any) => 
+                (p.post?.id === selectedPost.id) || 
+                (p.id === selectedPost.id) ||
+                (p.type === 'post' && p.data?.id === selectedPost.id) ||
+                (p.type === 'share' && p.data?.post?.id === selectedPost.id)
+            );
+
             if (updatedWrapper) {
-                 const content = updatedWrapper.post || updatedWrapper;
-                 if (JSON.stringify(content) !== JSON.stringify(selectedPost)) {
+                 let content: any = updatedWrapper;
+                 
+                 // 1. Check for standard "wrapper" share (e.g. from Profile feed directly)
+                 if ((updatedWrapper as any).post) {
+                     content = (updatedWrapper as any).post;
+                 }
+                 // 2. Check for Dashboard "FeedItem" structure (type='post')
+                 else if ((updatedWrapper as any).type === 'post') {
+                     content = (updatedWrapper as any).data;
+                 }
+                 // 3. Check for Dashboard "FeedItem" structure (type='share')
+                 // Added optional chaining (?.) to .data to prevent crash if data is missing
+                 else if ((updatedWrapper as any).type === 'share') {
+                     content = (updatedWrapper as any).data?.post;
+                 }
+
+                 // Only update if content was successfully resolved and differs
+                 if (content && JSON.stringify(content) !== JSON.stringify(selectedPost)) {
                      setSelectedPost(content);
                  }
             }
         }
     }, [allPosts, selectedPost]);
+    // -------------------
 
     const breadcrumbs: BreadcrumbItem[] = [
-        {
-            title: 'Profile',
-            href: route('profile.show', { user: profileUser.id }),
-        },
+        { title: 'Profile', href: route('profile.show', { user: profileUser.id }) },
     ];
 
     return (
@@ -78,7 +98,6 @@ export default function ProfileShow({
             <Head title={`${profileUser.name}'s Profile`} />
 
             <div className="mx-auto max-w-xl w-full pt-4 pb-8 px-4 sm:px-0">
-                
                 <div className="rounded-xl border bg-background shadow-sm mb-8 overflow-hidden">
                     <div className="h-28 bg-primary/10 border-b relative" />
                     
@@ -120,30 +139,17 @@ export default function ProfileShow({
                             <div className="grid grid-cols-4 gap-0 border-t border-b py-4 bg-muted/5 -mx-6">
                                 <div className="flex flex-col items-center justify-center border-r border-border/50 px-1">
                                     <span className="text-lg font-black text-foreground">{profileUser.posts_count ?? 0}</span>
-                                    <div className="flex items-center gap-1 text-[9px] uppercase tracking-widest font-bold text-muted-foreground">
-                                        Posts
-                                    </div>
+                                    <div className="flex items-center gap-1 text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Posts</div>
                                 </div>
-
                                 <div className="flex flex-col items-center justify-center border-r border-border/50 px-1">
                                     <span className="text-lg font-black text-foreground">{profileUser.shares_count ?? 0}</span>
-                                    <div className="flex items-center gap-1 text-[9px] uppercase tracking-widest font-bold text-muted-foreground">
-                                        Shares
-                                    </div>
+                                    <div className="flex items-center gap-1 text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Shares</div>
                                 </div>
-
-                                <Link 
-                                    href={route('profile.followers', profileUser.id)} 
-                                    className="flex flex-col items-center justify-center border-r border-border/50 px-1 transition-colors hover:bg-muted/10"
-                                >
+                                <Link href={route('profile.followers', profileUser.id)} className="flex flex-col items-center justify-center border-r border-border/50 px-1 transition-colors hover:bg-muted/10">
                                     <span className="text-lg font-black text-foreground">{profileUser.followers_count ?? 0}</span>
                                     <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Followers</span>
                                 </Link>
-
-                                <Link 
-                                    href={route('profile.following', profileUser.id)} 
-                                    className="flex flex-col items-center justify-center px-1 transition-colors hover:bg-muted/10"
-                                >
+                                <Link href={route('profile.following', profileUser.id)} className="flex flex-col items-center justify-center px-1 transition-colors hover:bg-muted/10">
                                     <span className="text-lg font-black text-foreground">{profileUser.following_count ?? 0}</span>
                                     <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Following</span>
                                 </Link>
@@ -154,22 +160,21 @@ export default function ProfileShow({
 
                 <div className="flex items-center gap-2 mb-6 px-1">
                     <Clock className="w-4 h-4 text-muted-foreground" />
-                    <h2 className="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground">
-                        Recent Activity
-                    </h2>
+                    <h2 className="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground">Recent Activity</h2>
                 </div>
                 
                 <div className="space-y-4">
                     {allPosts.map((item: any) => {
-                        const key = `${item.type}-${item.id}`;
+                        const key = `${item.type || 'post'}-${item.id || item.data?.id}`;
                         
                         if (item.type === 'share') {
                             return (
                                 <ShareCard 
                                     key={key}
-                                    share={item}
+                                    share={item} 
                                     onCommentClick={(targetPost) => setSelectedPost(targetPost)}
                                     onDelete={handlePostDelete}
+                                    onSync={handlePostUpdate} 
                                 />
                             );
                         }
@@ -180,12 +185,13 @@ export default function ProfileShow({
                                 post={item} 
                                 onCommentClick={(targetPost) => setSelectedPost(targetPost)} 
                                 onDelete={handlePostDelete}
+                                onSync={handlePostUpdate}
                             />
                         );
                     })}
                 </div>
 
-                <div className="py-12 flex justify-center">
+                <div className="flex justify-center">
                     {isLoading ? (
                          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                     ) : (
@@ -193,16 +199,14 @@ export default function ProfileShow({
                             <span className="opacity-0">Loading...</span> 
                         ) : (
                             allPosts.length > 0 ? (
-                                <span className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">End of activity</span>
+                                <span className="py-12 text-[10px] tracking-widest font-bold text-muted-foreground">End of activity</span>
                             ) : (
                                 <div className="rounded-xl border border-dashed bg-muted/20 p-12 text-center flex flex-col items-center justify-center w-full">
                                     <div className="bg-background p-4 rounded-full mb-4 shadow-sm border border-border/50">
                                         <FileText className="w-8 h-8 text-muted-foreground/60" />
                                     </div>
                                     <h3 className="text-lg font-medium text-foreground">No activity yet</h3>
-                                    <p className="text-sm text-muted-foreground mt-1">
-                                        This user hasn't posted or shared anything yet.
-                                    </p>
+                                    <p className="text-sm text-muted-foreground mt-1">This user hasn't posted or shared anything yet.</p>
                                 </div>
                             )
                         )

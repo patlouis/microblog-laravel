@@ -40,7 +40,6 @@ export default function PostCard({ post: initialPost, onCommentClick, onDelete, 
         const newLiked = !post.liked;
         const newCount = newLiked ? post.likes_count + 1 : post.likes_count - 1;
         
-        // Optimistic update
         const updatedPost = { ...post, liked: newLiked, likes_count: newCount };
         setPost(updatedPost);
         if (onSync) onSync(updatedPost);
