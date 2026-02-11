@@ -9,6 +9,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ShareController;
+use App\Http\Controllers\SearchController;
 
 Route::get('/', function () {
     return Inertia::render('welcome', [
@@ -31,6 +32,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile/{user}/followers', [ProfileController::class, 'followers'])->name('profile.followers');
     Route::get('/profile/{user}/following', [ProfileController::class, 'following'])->name('profile.following');
     Route::post('/profile/{user}/follow', [ProfileController::class, 'follow'])->name('profile.follow');
+    Route::get('/api/search/users', SearchController::class)->name('search.users');
 });
 
 require __DIR__.'/settings.php';

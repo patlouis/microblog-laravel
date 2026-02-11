@@ -193,7 +193,9 @@ export default function ProfileShow({
 
                 <div className="flex justify-center">
                     {isLoading ? (
-                         <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                        <span className="py-8">
+                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        </span>
                     ) : (
                         nextPageUrl ? (
                             <span className="opacity-0">Loading...</span> 
