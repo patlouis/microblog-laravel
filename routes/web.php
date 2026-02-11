@@ -20,6 +20,8 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     // Home
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    // Search
+    Route::get('/api/search/users', SearchController::class)->name('search.users');
     // Post
     Route::resource('posts', PostController::class);
     Route::post('/posts/{post}/like', [LikeController::class, 'toggle'])->name('posts.like'); 
@@ -32,7 +34,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile/{user}/followers', [ProfileController::class, 'followers'])->name('profile.followers');
     Route::get('/profile/{user}/following', [ProfileController::class, 'following'])->name('profile.following');
     Route::post('/profile/{user}/follow', [ProfileController::class, 'follow'])->name('profile.follow');
-    Route::get('/api/search/users', SearchController::class)->name('search.users');
 });
 
 require __DIR__.'/settings.php';

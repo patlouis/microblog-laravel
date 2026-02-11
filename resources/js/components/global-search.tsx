@@ -52,7 +52,7 @@ export function GlobalSearch() {
                 <Search className="absolute left-3 size-4 text-neutral-500" />
                 <input
                     type="text"
-                    placeholder="Search users..."
+                    placeholder="Search"
                     value={query}
                     onChange={(e) => {
                         setQuery(e.target.value);

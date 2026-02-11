@@ -66,28 +66,22 @@ export default function ProfileShow({
             if (updatedWrapper) {
                  let content: any = updatedWrapper;
                  
-                 // 1. Check for standard "wrapper" share (e.g. from Profile feed directly)
                  if ((updatedWrapper as any).post) {
                      content = (updatedWrapper as any).post;
                  }
-                 // 2. Check for Dashboard "FeedItem" structure (type='post')
                  else if ((updatedWrapper as any).type === 'post') {
                      content = (updatedWrapper as any).data;
                  }
-                 // 3. Check for Dashboard "FeedItem" structure (type='share')
-                 // Added optional chaining (?.) to .data to prevent crash if data is missing
                  else if ((updatedWrapper as any).type === 'share') {
                      content = (updatedWrapper as any).data?.post;
                  }
 
-                 // Only update if content was successfully resolved and differs
                  if (content && JSON.stringify(content) !== JSON.stringify(selectedPost)) {
                      setSelectedPost(content);
                  }
             }
         }
     }, [allPosts, selectedPost]);
-    // -------------------
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Profile', href: route('profile.show', { user: profileUser.id }) },
