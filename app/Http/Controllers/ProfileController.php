@@ -68,7 +68,20 @@ class ProfileController extends Controller
         ]);
     }
 
-    // App/Http/Controllers/PostController.php
+    public function following(Request $request, User $user)
+    {
+        $users = $user->following()
+            ->withExists(['followers as is_following' => function ($query) {
+                $query->where('follower_id', Auth::id());
+            }])
+            ->paginate(5);
+
+        return Inertia::render('profile/UserList', [
+            'profileUser' => $user,
+            'title' => 'Following',
+            'users' => $users,
+        ]);
+    }
 
     public function destroy(Post $post)
     {

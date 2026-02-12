@@ -5,17 +5,13 @@ import { route } from 'ziggy-js';
 import { ArrowLeft, UserPlus, UserCheck, Loader2, UserMinus } from 'lucide-react';
 import { useState } from 'react';
 
-/**
- * Individual Follow Button Component
- * Tracks state for a single user in the list
- */
 function FollowButton({ user, initialFollowing }: { user: User, initialFollowing: boolean }) {
     const [isFollowing, setIsFollowing] = useState(initialFollowing);
     const [isLoading, setIsLoading] = useState(false);
     const [isHovering, setIsHovering] = useState(false);
 
     const toggleFollow = (e: React.MouseEvent) => {
-        e.preventDefault(); // Prevents clicking the button from triggering the parent Link
+        e.preventDefault();
         if (isLoading) return;
 
         setIsLoading(true);
@@ -26,7 +22,7 @@ function FollowButton({ user, initialFollowing }: { user: User, initialFollowing
             preserveScroll: true,
             onFinish: () => setIsLoading(false),
             onError: () => {
-                setIsFollowing(!newStatus); // Revert on error
+                setIsFollowing(!newStatus);
             },
         });
     };
