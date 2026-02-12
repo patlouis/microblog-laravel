@@ -59,7 +59,7 @@ class ProfileController extends Controller
             ->withExists(['followers as is_following' => function ($query) {
                 $query->where('follower_id', Auth::id());
             }])
-            ->paginate(5);
+            ->get();
 
         return Inertia::render('profile/UserList', [
             'profileUser' => $user,
@@ -74,7 +74,7 @@ class ProfileController extends Controller
             ->withExists(['followers as is_following' => function ($query) {
                 $query->where('follower_id', Auth::id());
             }])
-            ->paginate(5);
+            ->get();
 
         return Inertia::render('profile/UserList', [
             'profileUser' => $user,

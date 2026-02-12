@@ -56,9 +56,6 @@ function FollowButton({ user, initialFollowing }: { user: User, initialFollowing
     );
 }
 
-/**
- * Main UserList Page Component
- */
 export default function UserList({ 
     profileUser, 
     title, 
@@ -66,7 +63,7 @@ export default function UserList({
 }: { 
     profileUser: User, 
     title: string, 
-    users: { data: (User & { is_following?: boolean })[] } 
+    users: (User & { is_following?: boolean })[] 
 }) {
     const { auth } = usePage().props as any;
 
@@ -86,7 +83,6 @@ export default function UserList({
             <Head title={`${profileUser.name} - ${title}`} />
 
             <div className="mx-auto max-w-xl w-full pt-4 pb-8 px-4 sm:px-0">
-                {/* Header with Back Button */}
                 <div className="flex items-center gap-4 mb-6">
                     <Link 
                         href={route('profile.show', profileUser.id)} 
@@ -100,15 +96,15 @@ export default function UserList({
                     </div>
                 </div>
 
-                {/* User List Container */}
                 <div className="bg-background border rounded-xl divide-y overflow-hidden shadow-sm">
-                    {users.data.length > 0 ? (
-                        users.data.map((user) => (
+                    {/* FIX: Removed .data check */}
+                    {users && users.length > 0 ? (
+                        // FIX: Removed .data map
+                        users.map((user) => (
                             <div 
                                 key={user.id} 
                                 className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors group"
                             >
-                                {/* User Info Link */}
                                 <Link href={route('profile.show', user.id)} className="flex items-center gap-3 flex-1 min-w-0">
                                     <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-sm font-bold text-primary-foreground shrink-0 border border-background shadow-sm">
                                         {user.name.charAt(0).toUpperCase()}
@@ -123,7 +119,6 @@ export default function UserList({
                                     </div>
                                 </Link>
 
-                                {/* Action Button (Hidden on self) */}
                                 <div className="ml-4 shrink-0">
                                     {auth.user.id !== user.id ? (
                                         <FollowButton 
