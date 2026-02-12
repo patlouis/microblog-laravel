@@ -21,7 +21,7 @@ class ProfileController extends Controller
         return Inertia::render('profile/show', [
             'profileUser' => $user,
             'isFollowing' => $request->user()?->isFollowing($user),
-            'posts'       => $profileService->getUserFeed($user->id, 10)
+            'posts'       => $profileService->getUserFeed($user->id, 20)
         ]);
     }
 

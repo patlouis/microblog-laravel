@@ -153,19 +153,13 @@ export function usePostFeed<T extends { id?: number; type?: string; data?: any }
         }));
     };
 
-    const handleCommentDeleted = useCallback((postId: number, commentId: number) => {
-        updatePostInState(postId, (post) => {
-            const commentExists = post.comments?.some((c) => c.id === commentId);
-            
-            if (!commentExists) return post; 
-
-            return {
-                ...post,
-                comments_count: Math.max(0, (post.comments_count || 1) - 1),
-                comments: (post.comments || []).filter((c) => c.id !== commentId)
-            };
-        });
-    }, [updatePostInState]);
+    const handleCommentDeleted = (postId: number, commentId: number) => {
+        updatePostInState(postId, (post) => ({
+            ...post,
+            comments_count: Math.max(0, (post.comments_count || 1) - 1),
+            comments: (post.comments || []).filter((c) => c.id !== commentId)
+        }));
+    };
 
     return {
         posts,
