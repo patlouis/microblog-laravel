@@ -4,6 +4,23 @@ import { User, BreadcrumbItem } from '@/types';
 import { route } from 'ziggy-js';
 import { ArrowLeft, UserPlus, UserCheck, Loader2, UserMinus } from 'lucide-react';
 import { useState } from 'react';
+import Pagination from '@/components/pagination';
+
+interface PaginationLinkType {
+    url: string | null;
+    label: string;
+    active: boolean;
+}
+
+interface PaginatedUsers {
+    data: (User & { is_following?: boolean })[];
+    links: PaginationLinkType[];
+    current_page: number;
+    last_page: number;
+    from: number;
+    to: number;
+    total: number;
+}
 
 function FollowButton({ user, initialFollowing }: { user: User, initialFollowing: boolean }) {
     const [isFollowing, setIsFollowing] = useState(initialFollowing);
@@ -34,11 +51,12 @@ function FollowButton({ user, initialFollowing }: { user: User, initialFollowing
             onMouseEnter={() => setIsHovering(true)}
             onMouseLeave={() => setIsHovering(false)}
             className={`
-                inline-flex items-center justify-center gap-2 px-4 py-1.5 rounded-full font-semibold text-xs transition-all duration-200 shadow-sm min-w-[110px] cursor-pointer
+                inline-flex items-center justify-center gap-2 px-4 py-1.5 rounded-full font-semibold text-xs transition-all duration-200 shadow-sm min-w-[110px] cursor-pointer select-none
                 ${isFollowing 
                     ? 'bg-secondary text-secondary-foreground border border-transparent hover:border-red-200 hover:text-red-600 hover:bg-red-50' 
                     : 'bg-primary text-primary-foreground hover:bg-primary/90'
                 }
+                ${isLoading ? 'opacity-80 cursor-wait' : ''}
             `}
         >
             {isLoading ? (
@@ -63,7 +81,7 @@ export default function UserList({
 }: { 
     profileUser: User, 
     title: string, 
-    users: (User & { is_following?: boolean })[] 
+    users: PaginatedUsers 
 }) {
     const { auth } = usePage().props as any;
 
@@ -78,11 +96,13 @@ export default function UserList({
         },
     ];
 
+    const userList = users.data;
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`${profileUser.name} - ${title}`} />
 
-            <div className="mx-auto max-w-xl w-full pt-4 pb-8 px-4 sm:px-0">
+            <div className="mx-auto max-w-xl w-full pt-4 pb-12 px-4 sm:px-0">
                 <div className="flex items-center gap-4 mb-6">
                     <Link 
                         href={route('profile.show', profileUser.id)} 
@@ -91,22 +111,20 @@ export default function UserList({
                         <ArrowLeft className="w-5 h-5 text-muted-foreground group-hover:text-foreground" />
                     </Link>
                     <div>
-                        <h1 className="text-xl font-bold tracking-tight">{title}</h1>
+                        <h1 className="text-xl font-bold tracking-tight text-foreground">{title}</h1>
                         <p className="text-xs text-muted-foreground">for {profileUser.name}</p>
                     </div>
                 </div>
 
                 <div className="bg-background border rounded-xl divide-y overflow-hidden shadow-sm">
-                    {/* FIX: Removed .data check */}
-                    {users && users.length > 0 ? (
-                        // FIX: Removed .data map
-                        users.map((user) => (
+                    {userList && userList.length > 0 ? (
+                        userList.map((user) => (
                             <div 
                                 key={user.id} 
-                                className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors group"
+                                className="flex items-center justify-between p-4 hover:bg-muted/40 transition-colors group"
                             >
                                 <Link href={route('profile.show', user.id)} className="flex items-center gap-3 flex-1 min-w-0">
-                                    <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-sm font-bold text-primary-foreground shrink-0 border border-background shadow-sm">
+                                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0 border border-transparent group-hover:border-primary/20 transition-colors">
                                         {user.name.charAt(0).toUpperCase()}
                                     </div>
                                     <div className="overflow-hidden">
@@ -126,23 +144,30 @@ export default function UserList({
                                             initialFollowing={user.is_following ?? false} 
                                         />
                                     ) : (
-                                        <span className="text-[10px] font-medium text-muted-foreground bg-muted px-2 py-1 rounded">You</span>
+                                        <span className="text-[10px] font-medium text-muted-foreground bg-muted px-2.5 py-1 rounded-full border">You</span>
                                     )}
                                 </div>
                             </div>
                         ))
                     ) : (
-                        <div className="p-16 text-center">
-                            <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-muted mb-4">
-                                <UserPlus className="h-6 w-6 text-muted-foreground/60" />
+                        <div className="py-20 text-center flex flex-col items-center">
+                            <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-muted/50 mb-4">
+                                <UserPlus className="h-8 w-8 text-muted-foreground/40" />
                             </div>
                             <h3 className="text-sm font-medium text-foreground">No {title.toLowerCase()} yet</h3>
-                            <p className="text-xs text-muted-foreground mt-1">
+                            <p className="text-xs text-muted-foreground mt-1 max-w-[250px]">
                                 When people {title === 'Followers' ? 'follow' : 'are followed by'} this user, they will appear here.
                             </p>
                         </div>
                     )}
                 </div>
+
+                {userList.length > 0 && (
+                    <div className="mt-8 flex flex-col items-center gap-4">
+                        <Pagination links={users.links} />
+                    
+                    </div>
+                )}
             </div>
         </AppLayout>
     );
