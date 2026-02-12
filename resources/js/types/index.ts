@@ -11,6 +11,11 @@ export type SharedData = {
     [key: string]: unknown;
 };
 
+export interface BreadcrumbItem {
+    title: string;
+    href: string;
+}
+
 export interface User {
     id: number;
     name: string;
@@ -41,7 +46,7 @@ export interface Post {
     likes_count: number;
     liked: boolean;
     comments_count: number;
-    comments: Comment[];
+    comments?: Comment[]; 
     
     shared: boolean;
     shares_count: number;
@@ -56,17 +61,24 @@ export interface Share {
     post: Post;        
 }
 
-export interface PaginatedPosts {
-    data: Post[];
+export interface PaginationLink {
+    url: string | null;
+    label: string;
+    active: boolean;
+}
+
+export interface PaginatedData<T> {
+    data: T[];
+    links: PaginationLink[];
     current_page: number;
     last_page: number;
     per_page: number;
     total: number;
+    from: number;
+    to: number;
     next_page_url: string | null;
     prev_page_url: string | null;
 }
 
-export interface BreadcrumbItem {
-    title: string;
-    href: string;
-}
+export type PaginatedPosts = PaginatedData<Post>;
+export type PaginatedComments = PaginatedData<Comment>;

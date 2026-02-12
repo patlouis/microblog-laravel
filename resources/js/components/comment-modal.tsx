@@ -7,6 +7,7 @@ import React, { useState, useRef, useEffect } from 'react';
 
 interface Props {
     post: Post;
+    initialComments?: Comment[];
     onClose: () => void;
     onCommentAdded?: (postId: number, newComment: Comment) => void;
     onCommentUpdated?: (postId: number, updatedComment: Comment) => void;
@@ -15,6 +16,7 @@ interface Props {
 
 export default function CommentModal({ 
     post, 
+    initialComments = [],
     onClose, 
     onCommentAdded, 
     onCommentUpdated, 
@@ -23,7 +25,10 @@ export default function CommentModal({
     const { auth } = usePage().props as any;
     const user = auth.user as User;
 
-    const [localComments, setLocalComments] = useState<Comment[]>(post.comments || []);
+    const [localComments, setLocalComments] = useState<Comment[]>(
+        initialComments.length > 0 ? initialComments : (post.comments || [])
+    );
+
     const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
     const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
     const [editBody, setEditBody] = useState('');
@@ -36,8 +41,12 @@ export default function CommentModal({
     });
 
     useEffect(() => {
-        if(post.comments) setLocalComments(post.comments);
-    }, [post.comments]);
+        if (initialComments.length > 0) {
+            setLocalComments(initialComments);
+        } else if (post.comments) {
+            setLocalComments(post.comments);
+        }
+    }, [initialComments, post.comments]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -50,15 +59,7 @@ export default function CommentModal({
     }, []);
 
     const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        const tempId = Date.now();
-        const newComment: Comment = {
-            id: tempId, 
-            body: data.body,
-            created_at: new Date().toISOString(),
-            user: user,
-        };
-
+        e.preventDefault();  
         submit(route('comments.store', post.id), {
             preserveScroll: true,
             onSuccess: () => {

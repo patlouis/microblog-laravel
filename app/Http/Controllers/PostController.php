@@ -43,18 +43,20 @@ class PostController extends Controller
      */
     public function show(Post $post)
     {
-        $post->load([
-            'user', 
-            'comments.user',
-        ]);
+        $post->load(['user']);
         
         $post->loadCount(['comments', 'likes', 'shares']);
-        
         $post->liked = $post->likes()->where('user_id', auth()->id())->exists();
         $post->shared = $post->shares()->where('user_id', auth()->id())->exists();
 
+        $comments = $post->comments()
+            ->with('user')
+            ->latest() 
+            ->paginate(5); 
+
         return Inertia::render('post/show', [
             'post' => $post,
+            'comments' => $comments,
         ]);
     }
 

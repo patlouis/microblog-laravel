@@ -3,13 +3,19 @@ import AppLayout from '@/layouts/app-layout';
 import PostCard from '@/components/post-card';
 import { ChevronLeft, MessageCircle } from 'lucide-react';
 import { route } from 'ziggy-js';
-import type { Post, BreadcrumbItem } from '@/types';
+import type { Post, BreadcrumbItem, PaginatedComments } from '@/types';
 import { useState } from 'react';
 import CommentModal from '@/components/comment-modal';
 import { formatRelativeDate, formatFullDate } from '@/lib/utils';
 import { usePostFeed } from '@/hooks/use-post-feed';
+import Pagination from '@/components/pagination';
 
-export default function Show({ post: initialPost }: { post: Post }) {
+interface Props {
+    post: Post;
+    comments: PaginatedComments;
+}
+
+export default function Show({ post: initialPost, comments }: Props) {
     const { auth } = usePage().props as any;
     const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
 
@@ -95,30 +101,36 @@ export default function Show({ post: initialPost }: { post: Post }) {
                 </div>
 
                 <div className="mt-2 divide-y divide-border/40">
-                    {post.comments && post.comments.length > 0 ? (
-                        post.comments.map((comment) => (
-                            <div key={comment.id} className="py-4 px-4 flex gap-3 group transition-colors hover:bg-muted/30 -mx-4 rounded-lg">
-                                <Link href={route('profile.show', comment.user.id)} className="shrink-0">
-                                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-xs font-bold border border-border/50">
-                                        {comment.user.name[0].toUpperCase()}
+                    {comments.data && comments.data.length > 0 ? (
+                        <>
+                            {comments.data.map((comment) => (
+                                <div key={comment.id} className="py-4 px-4 flex gap-3 group transition-colors hover:bg-muted/30 -mx-4 rounded-lg">
+                                    <Link href={route('profile.show', comment.user.id)} className="shrink-0">
+                                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-xs font-bold border border-border/50">
+                                            {comment.user.name[0].toUpperCase()}
+                                        </div>
+                                    </Link>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-1.5 mb-0.5">
+                                            <Link href={route('profile.show', comment.user.id)} className="font-bold text-sm hover:underline truncate shrink-0">
+                                                {comment.user.name}
+                                            </Link>
+                                            <span className="text-muted-foreground text-xs shrink-0">·</span>
+                                            <span className="text-muted-foreground text-xs shrink-0">
+                                                {formatRelativeDate(comment.created_at)}
+                                            </span>
+                                        </div>
+                                        <p className="text-[15px] leading-normal text-foreground/90 whitespace-pre-wrap break-words">
+                                            {comment.body}
+                                        </p>
                                     </div>
-                                </Link>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-1.5 mb-0.5">
-                                        <Link href={route('profile.show', comment.user.id)} className="font-bold text-sm hover:underline truncate shrink-0">
-                                            {comment.user.name}
-                                        </Link>
-                                        <span className="text-muted-foreground text-xs shrink-0">·</span>
-                                        <span className="text-muted-foreground text-xs shrink-0">
-                                            {formatRelativeDate(comment.created_at)}
-                                        </span>
-                                    </div>
-                                    <p className="text-[15px] leading-normal text-foreground/90 whitespace-pre-wrap break-words">
-                                        {comment.body}
-                                    </p>
                                 </div>
+                            ))}
+
+                            <div className="py-6 flex justify-center">
+                                <Pagination links={comments.links} />
                             </div>
-                        ))
+                        </>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground/60">
                             <MessageCircle size={48} className="mb-4 opacity-20" />
@@ -132,6 +144,7 @@ export default function Show({ post: initialPost }: { post: Post }) {
             {isCommentModalOpen && (
                 <CommentModal 
                     post={post}
+                    initialComments={comments.data}
                     onClose={() => setIsCommentModalOpen(false)}
                     onCommentAdded={handleCommentAdded}
                     onCommentUpdated={handleCommentUpdated} 

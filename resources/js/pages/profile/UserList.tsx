@@ -156,7 +156,7 @@ export default function UserList({
                             </div>
                             <h3 className="text-sm font-medium text-foreground">No {title.toLowerCase()} yet</h3>
                             <p className="text-xs text-muted-foreground mt-1 max-w-[250px]">
-                                When people {title === 'Followers' ? 'follow' : 'are followed by'} this user, they will appear here.
+                                People who {title === 'Followers' ? 'follow' : 'are followed by'} this user, will appear here.
                             </p>
                         </div>
                     )}
