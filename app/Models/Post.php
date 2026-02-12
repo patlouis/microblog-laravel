@@ -74,7 +74,6 @@ class Post extends Model
             } else {
                 $post->comments()->delete();
                 $post->likes()->delete();
-                $post->shares()->delete();
             }
         });
 

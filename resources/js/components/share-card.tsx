@@ -1,4 +1,4 @@
-import { Repeat2, AlertCircle } from 'lucide-react';
+import { Repeat2, AlertTriangle } from 'lucide-react';
 import { formatRelativeDate } from '@/lib/utils';
 import type { Post } from '@/types';
 import PostCard from '@/components/post-card';
@@ -9,8 +9,8 @@ interface Props {
     share: any;
     onCommentClick: (post: Post) => void;
     onDelete: (id: number) => void;
-    onLike: (post: Post) => void;   
-    onShare: (post: Post) => void;  
+    onLike: (post: Post) => void;
+    onShare: (post: Post) => void;
     onSync?: (post: Post) => void;
 }
 
@@ -18,20 +18,13 @@ export default function ShareCard({
     share, 
     onCommentClick, 
     onDelete, 
-    onLike,  
+    onLike, 
     onShare, 
     onSync 
 }: Props) {
     const originalPost = share.post;
-
-    if (!originalPost) {
-        return (
-            <div className="w-full rounded-lg border bg-background p-4 shadow-sm text-muted-foreground text-sm flex items-center gap-2 mb-4">
-                <AlertCircle size={16} />
-                <span>This shared post is no longer available.</span>
-            </div>
-        );
-    }
+    
+    const isUnavailable = !originalPost || originalPost.deleted_at;
 
     return (
         <div className="mb-4">
@@ -50,14 +43,26 @@ export default function ShareCard({
                 </span>
             </div>
 
-            <PostCard 
-                post={originalPost} 
-                onCommentClick={onCommentClick} 
-                onDelete={onDelete}
-                onLike={onLike} 
-                onShare={onShare}
-                className="border-muted/60 shadow-none hover:shadow-sm"
-            />
+            {isUnavailable ? (
+                <div className="w-full rounded-lg border border-dashed bg-muted/40 p-10 text-muted-foreground text-sm flex flex-col items-center justify-center gap-2 text-center select-none">
+                    <div className="bg-background p-2 rounded-full border shadow-sm">
+                        <AlertTriangle size={20} className="text-muted-foreground/60" />
+                    </div>
+                    <div>
+                        <p className="font-medium text-foreground/80">Content Unavailable</p>
+                        <p className="text-xs opacity-70">This post has been deleted.</p>
+                    </div>
+                </div>
+            ) : (
+                <PostCard 
+                    post={originalPost} 
+                    onCommentClick={onCommentClick} 
+                    onDelete={onDelete}
+                    onLike={onLike} 
+                    onShare={onShare}
+                    className="border-muted/60 shadow-none hover:shadow-sm"
+                />
+            )}
         </div>
     );
 }
