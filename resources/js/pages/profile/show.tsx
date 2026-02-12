@@ -26,6 +26,8 @@ export default function ProfileShow({
         nextPageUrl,
         handlePostUpdate,
         handlePostDelete, 
+        handleLike,
+        handleShare,
         handleCommentAdded, 
         handleCommentUpdated, 
         handleCommentDeleted 
@@ -52,10 +54,8 @@ export default function ProfileShow({
         });
     };
     
-    // --- FIX IS HERE ---
     useEffect(() => {
         if (selectedPost) {
-            // Safe find logic
             const updatedWrapper = allPosts.find((p: any) => 
                 (p.post?.id === selectedPost.id) || 
                 (p.id === selectedPost.id) ||
@@ -168,6 +168,8 @@ export default function ProfileShow({
                                     share={item} 
                                     onCommentClick={(targetPost) => setSelectedPost(targetPost)}
                                     onDelete={handlePostDelete}
+                                    onLike={handleLike}   
+                                    onShare={handleShare}
                                     onSync={handlePostUpdate} 
                                 />
                             );
@@ -179,7 +181,8 @@ export default function ProfileShow({
                                 post={item} 
                                 onCommentClick={(targetPost) => setSelectedPost(targetPost)} 
                                 onDelete={handlePostDelete}
-                                onSync={handlePostUpdate}
+                                onLike={handleLike}   
+                                onShare={handleShare} 
                             />
                         );
                     })}

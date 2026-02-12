@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, router, usePage } from '@inertiajs/react';
 import { Heart, MessageSquare, Repeat2, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { formatRelativeDate } from '@/lib/utils';
@@ -9,19 +9,15 @@ interface Props {
     post: Post; 
     onCommentClick: (post: Post) => void;
     onDelete: (id: number) => void;
-    onSync?: (post: Post) => void;
+    onLike: (post: Post) => void;
+    onShare: (post: Post) => void;
     className?: string; 
 }
 
-export default function PostCard({ post: initialPost, onCommentClick, onDelete, onSync, className = '' }: Props) {
+export default function PostCard({ post, onCommentClick, onDelete, onLike, onShare, className = '' }: Props) {
     const { auth } = usePage().props as any;
-    const [post, setPost] = useState<Post>(initialPost);
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        setPost(initialPost);
-    }, [initialPost]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -34,41 +30,6 @@ export default function PostCard({ post: initialPost, onCommentClick, onDelete, 
     }, []);
 
     const isOwner = auth.user.id === post.user.id;
-
-    const toggleLike = (e: React.MouseEvent) => {
-        e.preventDefault();
-        const newLiked = !post.liked;
-        const newCount = newLiked ? post.likes_count + 1 : post.likes_count - 1;
-        
-        const updatedPost = { ...post, liked: newLiked, likes_count: newCount };
-        setPost(updatedPost);
-        if (onSync) onSync(updatedPost);
-
-        router.post(route('posts.like', post.id), {}, { 
-            preserveScroll: true, 
-            onError: () => {
-                setPost(initialPost); 
-                if (onSync) onSync(initialPost);
-            } 
-        });
-    };
-
-    const toggleShare = (e: React.MouseEvent) => {
-        e.preventDefault();
-        const newCount = post.shares_count + 1; 
-        const updatedPost = { ...post, shared: true, shares_count: newCount }; 
-        
-        setPost(updatedPost);
-        if (onSync) onSync(updatedPost);
-
-        router.post(route('posts.share', post.id), {}, {
-            preserveScroll: true,
-            onError: () => {
-                setPost(initialPost);
-                if (onSync) onSync(initialPost);
-            }
-        });
-    };
 
     return (
         <div className={`w-full rounded-lg border bg-background p-4 shadow-sm transition-all hover:shadow-md overflow-hidden ${className}`}>
@@ -137,7 +98,7 @@ export default function PostCard({ post: initialPost, onCommentClick, onDelete, 
 
             <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-3 text-sm text-muted-foreground">
                 <button 
-                    onClick={toggleLike} 
+                    onClick={(e) => { e.preventDefault(); onLike(post); }} 
                     className={`flex items-center gap-2 transition-colors px-2 py-1 cursor-pointer rounded-md hover:bg-muted/50 ${post.liked ? 'text-rose-500' : 'hover:text-rose-500'}`}
                 >
                     <Heart size={18} fill={post.liked ? 'currentColor' : 'none'} />
@@ -145,10 +106,7 @@ export default function PostCard({ post: initialPost, onCommentClick, onDelete, 
                 </button>
                 
                 <button 
-                    onClick={(e) => {
-                        e.preventDefault();
-                        onCommentClick(post);
-                    }} 
+                    onClick={(e) => { e.preventDefault(); onCommentClick(post); }} 
                     className="flex items-center gap-2 hover:text-blue-500 transition-colors px-2 py-1 cursor-pointer rounded-md hover:bg-muted/50"
                 >
                     <MessageSquare size={18} />
@@ -156,7 +114,7 @@ export default function PostCard({ post: initialPost, onCommentClick, onDelete, 
                 </button>
                 
                 <button 
-                    onClick={toggleShare} 
+                    onClick={(e) => { e.preventDefault(); onShare(post); }} 
                     className={`flex items-center gap-2 transition-colors px-2 py-1 cursor-pointer rounded-md hover:bg-muted/50 ${post.shared ? 'text-green-600' : 'hover:text-green-600'}`}
                 >
                     <Repeat2 size={18} />

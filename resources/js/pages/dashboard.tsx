@@ -34,6 +34,8 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedFee
         nextPageUrl,
         handlePostUpdate,
         handlePostDelete, 
+        handleLike,
+        handleShare,
         handleCommentAdded,
         handleCommentUpdated,
         handleCommentDeleted
@@ -41,7 +43,6 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedFee
 
     const [selectedPost, setSelectedPost] = useState<Post | null>(null);
 
-    // Keep Modal Synced
     useEffect(() => {
         if (selectedPost) {
             const foundItem = (feedItems as unknown as FeedItem[]).find(i => 
@@ -87,7 +88,9 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedFee
                                     share={item.data}
                                     onCommentClick={(p) => setSelectedPost(p)}
                                     onDelete={handlePostDelete}
-                                    onSync={handlePostUpdate} // Connected
+                                    onLike={handleLike}   
+                                    onShare={handleShare}
+                                    onSync={handlePostUpdate}
                                 />
                             );
                         } else {
@@ -97,7 +100,8 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedFee
                                     post={item.data}
                                     onCommentClick={(p) => setSelectedPost(p)}
                                     onDelete={handlePostDelete}
-                                    onSync={handlePostUpdate}
+                                    onLike={handleLike}   
+                                    onShare={handleShare}
                                 />
                             );
                         }
@@ -124,7 +128,7 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedFee
                                     </div>
                                     <h3 className="text-lg font-medium text-foreground">No posts yet</h3>
                                     <p className="text-sm text-muted-foreground mt-1 max-w-[250px] mx-auto">
-                                        Create your first post or follow people to see what's happening.
+                                        Create your first post or follow people to see content here.
                                     </p>
                                 </div>
                             )

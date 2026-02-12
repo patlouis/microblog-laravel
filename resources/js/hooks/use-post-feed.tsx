@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { router } from '@inertiajs/react';
 import { Post, Comment } from '@/types';
+import { route } from 'ziggy-js';
 
 interface PaginatedData<T> {
     data: T[];
@@ -33,7 +34,6 @@ export function usePostFeed<T extends { id?: number; type?: string; data?: any }
                 if (incoming && incoming.data) {
                     setPosts((prev) => [...prev, ...incoming.data]);
                     setNextPageUrl(incoming.next_page_url);
-
                     window.history.replaceState({}, '', window.location.pathname);
                 }
                 setIsLoading(false);
@@ -50,7 +50,6 @@ export function usePostFeed<T extends { id?: number; type?: string; data?: any }
                 loadMorePosts();
             }
         };
-
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, [loadMorePosts]);
@@ -69,7 +68,7 @@ export function usePostFeed<T extends { id?: number; type?: string; data?: any }
                     };
                 }
 
-                if (item.id === postId) {
+                if (item.id === postId && !item.type) {
                     return updateFn(item) as any;
                 }
 
@@ -88,12 +87,51 @@ export function usePostFeed<T extends { id?: number; type?: string; data?: any }
 
     const handlePostDelete = useCallback((deletedPostId: number) => {
         setPosts((currentItems) => currentItems.filter((item: any) => {
-            if (item.type === 'post') return item.data.id !== deletedPostId;
-            if (item.type === 'share') return item.data.post.id !== deletedPostId;
-            if (item.post?.id) return item.post.id !== deletedPostId;
+            if (item.type === 'post') {
+                return item.data?.id !== deletedPostId;
+            }
+
+            if (item.type === 'share') {
+                return item.data?.post?.id !== deletedPostId;
+            }
+
+            if (item.post?.id) {
+                return item.post.id !== deletedPostId;
+            }
+
             return item.id !== deletedPostId;
         }));
     }, []);
+
+    const handleLike = useCallback((post: Post) => {
+        const originalPost = post;
+        
+        updatePostInState(post.id, (p) => ({ 
+            ...p, 
+            liked: !p.liked, 
+            likes_count: p.liked ? p.likes_count - 1 : p.likes_count + 1 
+        }));
+
+        router.post(route('posts.like', post.id), {}, { 
+            preserveScroll: true, 
+            onError: () => updatePostInState(post.id, () => originalPost)
+        });
+    }, [updatePostInState]);
+
+    const handleShare = useCallback((post: Post) => {
+        const originalPost = post;
+
+        updatePostInState(post.id, (p) => ({ 
+            ...p, 
+            shared: !p.shared, 
+            shares_count: p.shared ? p.shares_count - 1 : p.shares_count + 1 
+        }));
+
+        router.post(route('posts.share', post.id), {}, {
+            preserveScroll: true,
+            onError: () => updatePostInState(post.id, () => originalPost)
+        });
+    }, [updatePostInState]);
 
     const handleCommentAdded = (postId: number, newComment: Comment) => {
         updatePostInState(postId, (post) => {
@@ -129,6 +167,8 @@ export function usePostFeed<T extends { id?: number; type?: string; data?: any }
         nextPageUrl,
         handlePostUpdate,
         handlePostDelete,
+        handleLike,
+        handleShare,
         handleCommentAdded,
         handleCommentUpdated,
         handleCommentDeleted

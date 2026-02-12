@@ -1,18 +1,27 @@
 import { Repeat2, AlertCircle } from 'lucide-react';
 import { formatRelativeDate } from '@/lib/utils';
-import type { Post, Share } from '@/types';
+import type { Post } from '@/types';
 import PostCard from '@/components/post-card';
 import { Link } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 
 interface Props {
-    share: Share;
+    share: any;
     onCommentClick: (post: Post) => void;
     onDelete: (id: number) => void;
+    onLike: (post: Post) => void;   
+    onShare: (post: Post) => void;  
     onSync?: (post: Post) => void;
 }
 
-export default function ShareCard({ share, onCommentClick, onDelete, onSync }: Props) {
+export default function ShareCard({ 
+    share, 
+    onCommentClick, 
+    onDelete, 
+    onLike,  
+    onShare, 
+    onSync 
+}: Props) {
     const originalPost = share.post;
 
     if (!originalPost) {
@@ -45,7 +54,8 @@ export default function ShareCard({ share, onCommentClick, onDelete, onSync }: P
                 post={originalPost} 
                 onCommentClick={onCommentClick} 
                 onDelete={onDelete}
-                onSync={onSync}
+                onLike={onLike} 
+                onShare={onShare}
                 className="border-muted/60 shadow-none hover:shadow-sm"
             />
         </div>

@@ -3,43 +3,46 @@ import AppLayout from '@/layouts/app-layout';
 import PostCard from '@/components/post-card';
 import { ChevronLeft, MessageCircle } from 'lucide-react';
 import { route } from 'ziggy-js';
-import type { Post, BreadcrumbItem, Comment } from '@/types';
+import type { Post, BreadcrumbItem } from '@/types';
 import { useState } from 'react';
 import CommentModal from '@/components/comment-modal';
 import { formatRelativeDate, formatFullDate } from '@/lib/utils';
+import { usePostFeed } from '@/hooks/use-post-feed';
 
 export default function Show({ post: initialPost }: { post: Post }) {
     const { auth } = usePage().props as any;
-    
-    const [post, setPost] = useState(initialPost);
     const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
+
+    const {
+        posts,
+        handleLike,
+        handleShare,
+        handleCommentAdded,
+        handleCommentUpdated,
+        handleCommentDeleted
+    } = usePostFeed({
+        data: [initialPost],
+        next_page_url: null,
+        current_page: 1
+    });
+
+    const post = posts[0] || initialPost;
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Home', href: route('dashboard') },
         { title: 'Post', href: route('posts.show', post.id) },
     ];
 
-    const handleCommentAdded = (postId: number, newComment: Comment) => {
-        setPost(prev => ({
-            ...prev,
-            comments_count: prev.comments_count + 1,
-            // Adds new comment to the BOTTOM of the list
-            comments: [...(prev.comments || []), newComment] 
-        }));
-    };
-
-    const handleSyncPost = (updatedPost: Post) => {
-        setPost(updatedPost);
+    const handleDelete = () => {
+        window.location.href = route('dashboard');
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`${post.user.name}: "${post.content.substring(0, 30)}..."`} />
 
-            {/* LAYOUT FIX: Added w-full and px-4 here. Removed inner margins. */}
             <div className="max-w-2xl w-full mx-auto pt-4 pb-12 px-4">
                 
-                {/* Header: Negative margin allows hover effect to touch edges while keeping icon aligned */}
                 <div className="sticky top-0 z-10 flex items-center gap-4 py-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/40 mb-4 -mx-4 px-4 transition-all">
                     <Link 
                         href={route('dashboard')} 
@@ -50,22 +53,20 @@ export default function Show({ post: initialPost }: { post: Post }) {
                     <h2 className="text-xl font-bold tracking-tight">Post</h2>
                 </div>
 
-                {/* POST CARD: No extra padding needed, parent handles it */}
                 <div className="mb-1">
                     <PostCard 
                         post={post} 
                         onCommentClick={() => setIsCommentModalOpen(true)}
-                        onDelete={() => window.location.href = route('dashboard')}
-                        onSync={handleSyncPost} 
+                        onDelete={handleDelete}
+                        onLike={handleLike}    
+                        onShare={handleShare} 
                     />
                 </div>
 
-                {/* TIMESTAMP: px-4 aligns text with PostCard's internal text */}
                 <div className="px-4 py-3 border-b border-border/60 text-muted-foreground text-[15px]">
                     {formatFullDate(post.created_at)}
                 </div>
 
-                {/* STATS BAR: whitespace-nowrap prevents shrinking on small screens */}
                 <div className="flex gap-6 px-4 py-4 border-b border-border/60 text-sm overflow-x-auto no-scrollbar">
                     <span className="cursor-default whitespace-nowrap shrink-0">
                         <strong className="text-foreground">{post.likes_count}</strong> 
@@ -81,7 +82,6 @@ export default function Show({ post: initialPost }: { post: Post }) {
                     </span>
                 </div>
 
-                {/* QUICK REPLY TRIGGER */}
                 <div 
                     className="flex gap-3 px-4 py-4 border-b border-border/60 items-center group cursor-pointer" 
                     onClick={() => setIsCommentModalOpen(true)}
@@ -94,7 +94,6 @@ export default function Show({ post: initialPost }: { post: Post }) {
                     </div>
                 </div>
 
-                {/* COMMENTS LIST */}
                 <div className="mt-2 divide-y divide-border/40">
                     {post.comments && post.comments.length > 0 ? (
                         post.comments.map((comment) => (
@@ -135,6 +134,8 @@ export default function Show({ post: initialPost }: { post: Post }) {
                     post={post}
                     onClose={() => setIsCommentModalOpen(false)}
                     onCommentAdded={handleCommentAdded}
+                    onCommentUpdated={handleCommentUpdated} 
+                    onCommentDeleted={handleCommentDeleted}
                 />
             )}
         </AppLayout>
