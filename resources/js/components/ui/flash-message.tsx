@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 
 interface Props {
     message: string;
@@ -7,35 +8,84 @@ interface Props {
 }
 
 export default function FlashMessage({ message, type, onClose }: Props) {
-    const [isVisible, setIsVisible] = useState(true);
+    const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
-        const timer = setTimeout(() => {
+        const entryTimer = setTimeout(() => setIsVisible(true), 10);
+        
+        const autoCloseTimer = setTimeout(() => {
             setIsVisible(false);
-            setTimeout(onClose, 300);
-        }, 4000);
+            setTimeout(onClose, 300); 
+        }, 5000);
 
-        return () => clearTimeout(timer);
+        return () => {
+            clearTimeout(entryTimer);
+            clearTimeout(autoCloseTimer);
+        };
     }, [onClose]);
 
-    const bgColors = {
-        message: 'bg-blue-500 border-blue-600',
-        success: 'bg-emerald-500 border-emerald-600',
-        error: 'bg-red-500 border-red-600',
+    const config = {
+        success: {
+            bg: 'bg-emerald-50 border-emerald-200',
+            text: 'text-emerald-800',
+            icon: <CheckCircle2 className="w-5 h-5 text-emerald-500" />,
+            progress: 'bg-emerald-500'
+        },
+        error: {
+            bg: 'bg-red-50 border-red-200',
+            text: 'text-red-800',
+            icon: <AlertCircle className="w-5 h-5 text-red-500" />,
+            progress: 'bg-red-500'
+        },
+        message: {
+            bg: 'bg-blue-50 border-blue-200',
+            text: 'text-blue-800',
+            icon: <Info className="w-5 h-5 text-blue-500" />,
+            progress: 'bg-blue-500'
+        }
     };
+
+    const current = config[type];
 
     return (
         <div 
-            className={`fixed top-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg text-white transition-all duration-300 transform ${
-                isVisible ? 'translate-x-0 opacity-100' : 'translate-x-10 opacity-0'
-            } ${bgColors[type]}`}
+            className={`fixed top-5 right-5 z-[100] w-full max-w-[320px] sm:max-w-[400px] overflow-hidden rounded-xl border shadow-2xl transition-all duration-500 ease-out transform ${
+                isVisible 
+                    ? 'translate-y-0 opacity-100' 
+                    : '-translate-y-4 opacity-0'
+            } ${current.bg}`}
         >
-            <span className="text-sm font-medium">{message}</span>
-            <button onClick={() => setIsVisible(false)} className="hover:opacity-70">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
+            <div className="relative p-4 flex items-start gap-3">
+                <div className="shrink-0 pt-0.5">
+                    {current.icon}
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-semibold leading-tight ${current.text}`}>
+                        {type === 'success' ? 'Success' : type === 'error' ? 'Error' : 'Notification'}
+                    </p>
+                    <p className={`text-xs mt-1 leading-relaxed opacity-90 ${current.text}`}>
+                        {message}
+                    </p>
+                </div>
+
+                <button 
+                    onClick={() => {
+                        setIsVisible(false);
+                        setTimeout(onClose, 300);
+                    }} 
+                    className={`shrink-0 rounded-lg p-1 transition-colors hover:bg-black/5 ${current.text}`}
+                >
+                    <X className="w-4 h-4" />
+                </button>
+            </div>
+
+            <div className="absolute bottom-0 left-0 h-1 w-full bg-black/5">
+                <div 
+                    className={`h-full transition-all duration-[5000ms] linear ${current.progress}`}
+                    style={{ width: isVisible ? '0%' : '100%' }}
+                />
+            </div>
         </div>
     );
 }

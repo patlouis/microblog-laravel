@@ -39,7 +39,7 @@ export default function Dashboard({ posts: initialPosts }: { posts: PaginatedFee
         handleCommentAdded,
         handleCommentUpdated,
         handleCommentDeleted
-    } = usePostFeed<FeedItem>(initialPosts as any);
+    } = usePostFeed<FeedItem>(initialPosts);
 
     const [selectedPost, setSelectedPost] = useState<Post | null>(null);
 
