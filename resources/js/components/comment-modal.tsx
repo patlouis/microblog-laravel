@@ -2,13 +2,14 @@ import { useForm, usePage, router } from '@inertiajs/react';
 import { formatRelativeDate } from '@/lib/utils';
 import { X, MessageCircle, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { route } from 'ziggy-js';
-import type { Post, Comment, User } from '@/types';
+import type { Post, Comment, User, PaginationLink } from '@/types';
 import React, { useState, useRef, useEffect } from 'react';
+import Pagination from '@/components/pagination';
 
 interface Props {
     post: Post;
-    initialComments?: Comment[];
     onClose: () => void;
+    paginationLinks?: PaginationLink[];
     onCommentAdded?: (postId: number, newComment: Comment) => void;
     onCommentUpdated?: (postId: number, updatedComment: Comment) => void;
     onCommentDeleted?: (postId: number, commentId: number) => void;
@@ -16,18 +17,14 @@ interface Props {
 
 export default function CommentModal({ 
     post, 
-    initialComments = [],
     onClose, 
+    paginationLinks = [],
     onCommentAdded, 
     onCommentUpdated, 
     onCommentDeleted 
 }: Props) {
     const { auth } = usePage().props as any;
     const user = auth.user as User;
-
-    const [localComments, setLocalComments] = useState<Comment[]>(
-        initialComments.length > 0 ? initialComments : (post.comments || [])
-    );
 
     const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
     const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
@@ -41,14 +38,6 @@ export default function CommentModal({
     });
 
     useEffect(() => {
-        if (initialComments.length > 0) {
-            setLocalComments(initialComments);
-        } else if (post.comments) {
-            setLocalComments(post.comments);
-        }
-    }, [initialComments, post.comments]);
-
-    useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
                 setActiveMenuId(null);
@@ -59,7 +48,8 @@ export default function CommentModal({
     }, []);
 
     const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();  
+        e.preventDefault();
+        
         submit(route('comments.store', post.id), {
             preserveScroll: true,
             onSuccess: () => {
@@ -76,8 +66,6 @@ export default function CommentModal({
             router.delete(route('comments.destroy', commentId), {
                 preserveScroll: true,
                 onSuccess: () => {
-                    setLocalComments((prev) => prev.filter(c => c.id !== commentId));
-                    if (onCommentDeleted) onCommentDeleted(post.id, commentId);
                     setActiveMenuId(null);
                 },
             });
@@ -88,15 +76,10 @@ export default function CommentModal({
         router.put(route('comments.update', commentId), { body: editBody }, {
             preserveScroll: true,
             onSuccess: () => {
-                setLocalComments((prev) => prev.map(c => 
-                    c.id === commentId ? { ...c, body: editBody } : c
-                ));
-                
                 if (onCommentUpdated) {
-                    const updated = localComments.find(c => c.id === commentId);
-                    if (updated) onCommentUpdated(post.id, { ...updated, body: editBody });
+                    const original = post.comments?.find(c => c.id === commentId);
+                    if (original) onCommentUpdated(post.id, { ...original, body: editBody });
                 }
-                
                 setEditingCommentId(null);
                 setEditBody('');
             }
@@ -122,9 +105,9 @@ export default function CommentModal({
                 </div>
 
                 <div className="p-4 overflow-y-auto flex-1 overscroll-contain">
-                    {localComments.length > 0 ? (
+                    {post.comments && post.comments.length > 0 ? (
                         <div className="space-y-6">
-                            {localComments.map((comment) => (
+                            {post.comments.map((comment) => (
                                 <div key={comment.id} className="flex gap-3 relative group">
                                     <div className="h-9 w-9 rounded-full bg-muted shrink-0 flex items-center justify-center text-xs font-bold text-muted-foreground z-10 ring-4 ring-background">
                                         {comment.user.name.charAt(0)}
@@ -170,11 +153,6 @@ export default function CommentModal({
                                                     onChange={(e) => setEditBody(e.target.value)}
                                                     className="w-full min-h-[60px] rounded-md border border-input bg-transparent px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none resize-none"
                                                     autoFocus
-                                                    onFocus={(e) => {
-                                                        const val = e.target.value;
-                                                        e.target.value = '';
-                                                        e.target.value = val;
-                                                    }}
                                                 />
                                                 <div className="flex gap-2 justify-end mt-2">
                                                     <button onClick={() => setEditingCommentId(null)} className="text-xs font-medium px-3 py-1.5 rounded-md hover:bg-muted cursor-pointer">Cancel</button>
@@ -195,6 +173,11 @@ export default function CommentModal({
                                     </div>
                                 </div>
                             ))}
+
+                            <div className="pt-2 pb-4">
+                                <Pagination links={paginationLinks} />
+                            </div>
+
                             <div ref={scrollEndRef} className="h-0 w-0" />
                         </div>
                     ) : (

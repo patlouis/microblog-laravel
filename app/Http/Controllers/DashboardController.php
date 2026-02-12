@@ -18,7 +18,7 @@ class DashboardController extends Controller
         $userIds = $user->following()->pluck('users.id')->push($user->id)->toArray();
 
         return Inertia::render('dashboard', [
-            'posts' => $dashboardService->getGlobalFeed($userIds, 5)
+            'posts' => $dashboardService->getGlobalFeed($userIds, 10)
         ]);
     }
 }
